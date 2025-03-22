@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     if (sem == SEM_FAILED) {
         perror("Error: No se pudo acceder al semaforo");
         munmap(game_state, sizeof(game_t));
-        close(shm_fd);
+        close(shm_fd); // TODO ver que es esto
         return EXIT_FAILURE;
     }
 

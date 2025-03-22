@@ -7,10 +7,11 @@
 #include <sys/shm.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <shm_utils.h>
 #include <semaphore.h>
-#include <shared_memory.h>
-#include <constants.h>
+#include <limits.h>
+#include "shared_memory.h"
+#include "shm_utils.h"
+#include "constants.h"
 
 #define DEFAULT_WIDTH 10
 #define DEFAULT_HEIGHT 10
@@ -18,6 +19,7 @@
 #define DEFAULT_TIMEOUT 10
 #define DEFAULT_SEED time(NULL)
 #define DEFAULT_VIEW NULL
+
 
 #define MIN_PLAYER_NUMBER 1
 #define MAX_PLAYER_NUMBER 9
@@ -71,6 +73,7 @@ int main(int argc, char const *argv[]){
     int width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, delay = DEFAULT_DELAY, timeout = DEFAULT_TIMEOUT, seed = DEFAULT_SEED;
     char * view_path = DEFAULT_VIEW;
     size_t player_count = 0;
+    char* players[MAX_PLAYERS];
     int c;
     while((c = getopt (argc, argv, "w:h:d:t:s:v:p:")) != -1){
         switch(c){
@@ -160,7 +163,40 @@ int main(int argc, char const *argv[]){
     game->player_number = player_count;
     game->has_finished = false;
 
+    char board_dimensions[2][256];
+    // board_dimensions[0] = alto
+    // board_dimensions[1] = ancho
+    sprintf(board_dimensions[0],"%d",height);
+    sprintf(board_dimensions[1],"%d",width);
     
+    for(int i=0; i<player_count; i++){
+        pid_t pid = fork();
+        if(pid == 0){ 
+            execv(players[i],(char * const *)board_dimensions);
+            perror("execv player");
+            exit(EXIT_FAILURE);
+        } else if(pid > 0){
+            game->players[i].pid = pid;
+        } else {
+            perror("fork player");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    int view_pid;
+
+    if(view_path != NULL){
+        pid_t pid = fork();
+        if(pid == 0){ 
+            // execve
+            exit(EXIT_FAILURE);
+        } else if(pid > 0){
+            view_pid = pid;
+        } else {
+            perror("fork view");
+            exit(EXIT_FAILURE);
+        }
+    }
 
     return 0;
 }
