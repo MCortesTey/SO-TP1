@@ -5,6 +5,7 @@
 #include <sys/mman.h>
 #include "shm_utils.h"
 #include "constants.h"
+#include "shared_memory.h"
 
 int main(int argc, char *argv[]  ){
     if ( argc != 3 ) {
@@ -15,19 +16,27 @@ int main(int argc, char *argv[]  ){
     int width = atoi(argv[1]);
     int height = atoi(argv[2]); 
 
-    game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t));
-    if ((int)game_state == EXIT_FAILURE) {
-        perror("Error al conectar a la memoria compartida del juego");
-        return EXIT_FAILURE;
-    }
-
-    // No necesitamos inicializar los semáforos porque el master ya lo hizo con sem_init
-    // Solo necesitamos acceder a los semáforos que ya existen en la memoria compartida
     game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync));
-    if ((int)sync == EXIT_FAILURE) {
-        perror("Error al conectar a la memoria compartida de sincronización");
-        return EXIT_FAILURE;
+    game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t));
+
+    // Loop principal de la vista
+    while (true) {
+        // Esperar señal del master indicando que hay cambios para imprimir
+        sem_wait(&sync->print_needed);
+
+        // TODO: Implementar la lógica de impresión
+
+        // Señalar al master que terminamos de imprimir
+        sem_post(&sync->print_done);
+
+        // Verificar si el juego ha terminado
+        if (game_state->has_finished) {
+            break;
+        }
     }
 
+    // Cleanup
+    munmap(sync, sizeof(game_sync));
+    munmap(game_state, sizeof(game_t));
     return EXIT_SUCCESS;
 }
