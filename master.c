@@ -49,10 +49,7 @@ game_sync * createGameSync(){
     init_shared_sem(&game_sync_ptr->reader_count_mutex,1);
     game_sync_ptr->readers_count = 0;
 
-    /**
-     * 
-     */
-
+    return game_sync_ptr;
 }
 
 game_t * createGame(){
@@ -62,6 +59,24 @@ game_t * createGame(){
         perror("Could not create game_state");
         exit(EXIT_FAILURE);
     }
+
+    game_t_ptr->board_width = 0;
+    game_t_ptr->board_height = 0;
+    game_t_ptr->player_number = 0;
+    game_t_ptr->has_finished = false;
+
+    for(int i = 0; i < MAX_PLAYERS; i++) {
+        game_t_ptr->players[i].name[0] = '\0';
+        game_t_ptr->players[i].score = 0;
+        game_t_ptr->players[i].invalid_mov_requests = 0;
+        game_t_ptr->players[i].valid_mov_request = 0;
+        game_t_ptr->players[i].x_coord = 0;
+        game_t_ptr->players[i].y_coord = 0;
+        game_t_ptr->players[i].pid = 0;
+        game_t_ptr->players[i].is_blocked = false;
+    }
+
+    return game_t_ptr;
 }
 
 int main(int argc, char const *argv[]){
@@ -128,15 +143,31 @@ int main(int argc, char const *argv[]){
                 view_path = optarg;
                 break;
             case 'p':
-                // TODO: agarrar valores de players usando optind y guardarlos. adaptar este bloque de código a lo nuestro
-                players[player_count++] = optarg; 
+                // Guardamos el primer jugador que viene en optarg
+                if (strlen(optarg) > MAX_NAME_LEN) {
+                    fprintf(stderr, "Error: Player name too long (max %d characters).\n", MAX_NAME_LEN);
+                    exit(EXIT_FAILURE);
+                }
+                // strdup hace una copia del path del jugador en memoria pq optarg es temporal y se borra cuando termina main
+                players[player_count++] = strdup(optarg);
+                
+                // Agarramos los jugadores que vienen después
                 while (optind < argc && argv[optind][0] != '-') {
-                    if (player_count < MAX_PLAYERS) {
-                        players[player_count++] = argv[optind++];
-                    } else {
+                    if (player_count >= MAX_PLAYERS) {
                         fprintf(stderr, "Error: Se alcanzó el límite de jugadores (%d).\n", MAX_PLAYERS);
-                        return 1;
+                        exit(EXIT_FAILURE);
                     }
+                    
+                    if (strlen(argv[optind]) > MAX_NAME_LEN) {
+                        fprintf(stderr, "Error: Player name too long (max %d characters).\n", MAX_NAME_LEN);
+                        exit(EXIT_FAILURE);
+                    }
+                    players[player_count++] = strdup(argv[optind++]);
+                }
+                
+                if (player_count < MIN_PLAYER_NUMBER) {
+                    fprintf(stderr, "Error: Se requiere al menos un jugador.\n");
+                    exit(EXIT_FAILURE);
                 }
                 break;
             case '?':
@@ -196,6 +227,11 @@ int main(int argc, char const *argv[]){
             perror("fork view");
             exit(EXIT_FAILURE);
         }
+    }
+
+    // free: Liberamos la memoria que pedimos con strdup en lineas 153 y 166
+    for(int i = 0; i < player_count; i++) {
+        free(players[i]);
     }
 
     return 0;
