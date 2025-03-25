@@ -36,14 +36,14 @@ void* connect_shm(char * name, size_t size){
     shm_fd = shm_open(name, O_RDWR, 0666);
     if (shm_fd < 0) {
         perror("Error al abrir la memoria compartida");
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
 
     // Mapear la memoria compartida
     void* return_ptr = mmap(0, sizeof(size), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     if (return_ptr == MAP_FAILED) {
         perror("Error al mapear la memoria compartida");
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
 	return return_ptr;
 }
