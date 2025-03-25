@@ -1,4 +1,4 @@
-GCCFLAGS = -Werror -Wall -std=c99 -D_POSIX_C_SOURCE=200809L
+GCCFLAGS = -Werror -Wall -D_POSIX_C_SOURCE=200809L
 CC = gcc 
 LDFLAGS = -lrt -pthread
 
