@@ -52,19 +52,19 @@ game_sync * createGameSync(){
     return game_sync_ptr;
 }
 
-game_t * createGame(){
+game_t * createGame(int width, int height, int n_players){
     game_t * game_t_ptr = create_shm(SHM_GAME_PATH, sizeof(game_t)); // crea memoria compartida
 
     if(game_t_ptr == NULL){ // no debería ocurrir esto
         perror("Could not create game_state");
         exit(EXIT_FAILURE);
     }
-
-    game_t_ptr->board_width = 0;
-    game_t_ptr->board_height = 0;
-    game_t_ptr->player_number = 0;
+    game_t_ptr->board_width = width;
+    game_t_ptr->board_height = height;
+    game_t_ptr->player_number = n_players;
     game_t_ptr->has_finished = false;
 
+    // Inicializar el array de jugadores
     for(int i = 0; i < MAX_PLAYERS; i++) {
         game_t_ptr->players[i].name[0] = '\0';
         game_t_ptr->players[i].score = 0;
@@ -186,13 +186,8 @@ int main(int argc, char const *argv[]){
         perror("Error: At least one player must be specified using -p.");
     }
 
-    game_t * game = createGame();
+    game_t * game = createGame(width, height, player_count);
     game_sync* sync = createGameSync();
-
-    game->board_width = width;
-    game->board_height = height;
-    game->player_number = player_count;
-    game->has_finished = false;
 
     char board_dimensions[2][256];
     // board_dimensions[0] = alto
