@@ -15,67 +15,37 @@
 //principal del jugador
 
 int main(int argc, char *argv[]) {
-    
     if (argc != 3) {
         fprintf(stderr, "Uso: %s <ancho> <alto>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
     int width = atoi(argv[1]);
-    if(width == 0){
-        perror("atoi width");
+    if(width <= 0) {
+        perror("ancho inválido");
         exit(EXIT_FAILURE);
     }
 
     int height = atoi(argv[2]);
-    if(height == 0){
-        perror("atoi height");
+    if(height <= 0) {
+        perror("alto inválido");
         exit(EXIT_FAILURE);
     }
 
-
-    // Conexion a la memoria compartida
+    // Conectar a la memoria compartida del juego
     game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t));
 
-    // Inicializar el estado del tablero
-    //board->width = width;
-    //board->height = height;
-    // ... inicializar otros campos del tablero ...
-
-    sem_t * sem = sem_open(SHM_GAME_SEMS_PATH, 0);  // Note el 0 en lugar de O_CREAT
-    if (sem == SEM_FAILED) {
-        perror("Error: No se pudo acceder al semaforo");
-        munmap(game_state, sizeof(game_t));
-        close(shm_fd); // TODO ver que es esto
-        return EXIT_FAILURE;
-    }
+    // Conectar a la memoria compartida de sincronización
+    game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync));
 
     // Bucle principal del jugador
-    while (1) {
-        // Esperar a que el semaforo este disponible
-        sem_wait(sem);
-
-        // Consultar el estado del tablero de forma sincronizada
-        // ... codigo para consultar el estado del tablero ...
-
-        // Enviar solicitudes de movimientos al master
-        // ... codigo para enviar solicitudes de movimiento ...
-
-        // Comprobar si el jugador esta bloqueado
-        // ... codigo para verificar el estado de bloqueo ...
-
-        // Liberar el semaforo
-        sem_post(sem);
-
-        // Esperar un tiempo antes de la siguiente consulta
-        sleep(1);
+    while (!game_state->has_finished) {
+        
     }
 
-    // Desconectar de la memoria compartida
+    // Limpieza
     munmap(game_state, sizeof(game_t));
-    shm_unlink(SHM_GAME_PATH);
-    sem_close(sem);
-    sem_unlink(SEM_NAME); // game_sync no es un sem, es un struct de sems.
+    munmap(sync, sizeof(game_sync));
 
     return EXIT_SUCCESS;
 }
