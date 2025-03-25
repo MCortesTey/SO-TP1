@@ -16,6 +16,8 @@
 #define COLOR_MAGENTA "\x1b[35m"
 #define COLOR_CYAN    "\x1b[36m"
 #define COLOR_WHITE   "\x1b[37m"
+#define COLOR_PURPLE  "\x1b[95m"
+#define COLOR_ORANGE  "\x1b[38;5;208m"
 
 // Array de colores para los jugadores
 const char* player_colors[] = {
@@ -26,6 +28,8 @@ const char* player_colors[] = {
     COLOR_MAGENTA,
     COLOR_CYAN,
     COLOR_WHITE,
+    COLOR_PURPLE,
+    COLOR_ORANGE,
     COLOR_RED,   
     COLOR_GREEN
 };
