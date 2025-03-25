@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <semaphore.h>
 #include <limits.h>
+#include <getopt.h>
 #include "shared_memory.h"
 #include "shm_utils.h"
 #include "constants.h"
