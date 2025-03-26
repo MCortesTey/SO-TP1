@@ -13,6 +13,7 @@
 #include "shared_memory.h"
 #include "shm_utils.h"
 #include "constants.h"
+#include "macros.h"
 
 #define DEFAULT_WIDTH 10
 #define DEFAULT_HEIGHT 10
@@ -27,20 +28,16 @@ enum pipeEnds{READ_END, WRITE_END};
 #define MAX_PLAYER_NUMBER 9
 #define MAX_NAME_LEN 16
 
+
 void init_shared_sem(sem_t * sem, int initial_value){
-    if(sem_init(sem,1,initial_value) == -1) {
-        perror("sem_init");
-        exit(EXIT_FAILURE);
-    }
+    IF_EXIT(sem_init(sem,1,initial_value) == -1,"sem_init")
 }
+
+
 
 game_sync * createGameSync(){
     game_sync * game_sync_ptr = create_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync));
-
-    if(game_sync_ptr == NULL){ // no debería ocurrir esto
-        perror("Could not create game_sync");
-        exit(EXIT_FAILURE);
-    }
+    IF_EXIT(IS_NULL(game_sync_ptr),"Could not create game_sync")
 
     // setear semáforos iniciales
     init_shared_sem(&game_sync_ptr->print_needed,0);
@@ -55,11 +52,8 @@ game_sync * createGameSync(){
 
 game_t * createGame(int width, int height, int n_players){
     game_t * game_t_ptr = create_shm(SHM_GAME_PATH, sizeof(game_t)); // crea memoria compartida
+    IF_EXIT(IS_NULL(game_t_ptr),"Could not create game_state")
 
-    if(game_t_ptr == NULL){ // no debería ocurrir esto
-        perror("Could not create game_state");
-        exit(EXIT_FAILURE);
-    }
     game_t_ptr->board_width = width;
     game_t_ptr->board_height = height;
     game_t_ptr->player_number = n_players;
@@ -95,47 +89,23 @@ int main(int argc, char const *argv[]){
         switch(c){
             case 'w':
                 width = atoi(optarg);
-                if(width == 0) {
-                    perror("atoi width");
-                    exit(EXIT_FAILURE);
-                }
-                if(width < DEFAULT_WIDTH){
-                    perror("width menor que la mínima");
-                    exit(EXIT_FAILURE);
-                }
+                IF_EXIT(width == 0, "atoi width")
+                IF_EXIT(width < DEFAULT_WIDTH, "width menor que la mínima")
                 break;
             case 'h':
                 height = atoi(optarg);
-                if(height == 0) {
-                    perror("atoi height");
-                    exit(EXIT_FAILURE);
-                }
-                if(height < DEFAULT_HEIGHT){
-                    perror("height menor que la mínima");
-                    exit(EXIT_FAILURE);
-                }
+                IF_EXIT(height == 0, "atoi height")
+                IF_EXIT(height < DEFAULT_HEIGHT, "height menor que la mínima")
                 break;
             case 'd':
                 delay = atoi(optarg);
-                if(delay == 0) {
-                    perror("atoi delay");
-                    exit(EXIT_FAILURE);
-                }
-                if(delay < 0){
-                    perror("delay menor que 0");
-                    exit(EXIT_FAILURE);
-                }
+                IF_EXIT(delay == 0, "atoi delay")
+                IF_EXIT(delay < 0, "delay menor que cero")
                 break;
             case 't':
                 timeout = atoi(optarg);
-                if(timeout == 0) {
-                    perror("atoi timeout");
-                    exit(EXIT_FAILURE);
-                }
-                if(timeout < 0){
-                    perror("timeout menor que 0");
-                    exit(EXIT_FAILURE);
-                }
+                IF_EXIT(timeout == 0, "atoi timeout")
+                IF_EXIT(timeout < 0, "timeout menor que cero")
                 break;
             case 's':
                 seed = atoi(optarg);
@@ -183,9 +153,9 @@ int main(int argc, char const *argv[]){
         }
     }
     
-    if(player_count < MIN_PLAYER_NUMBER || player_count > MAX_PLAYER_NUMBER){
-        perror("Error: At least one player must be specified using -p.");
-    }
+
+    IF_EXIT(player_count < MIN_PLAYER_NUMBER,"Error: At least one player must be specified using -p.")
+    IF_EXIT(player_count > MAX_PLAYER_NUMBER, "Error: max players = 9") // adaptar a lo que sea...
 
     game_t * game = createGame(width, height, player_count);
     game_sync* sync = createGameSync();
@@ -202,48 +172,33 @@ int main(int argc, char const *argv[]){
     int pipes[MAX_PLAYER_NUMBER][2];
 
     for(int i = 0; i < player_count; i++){
-        if(pipe(pipes[i]) == -1){ // crea pipes para cada uno de los procesos
-            perror("pipe");
-            exit(EXIT_FAILURE);
-        }
+        IF_EXIT(pipe(pipes[i]) == -1, "pipe")
     }
 
     for(int i=0; i < player_count; i++){
         pid_t pid = fork();
+        IF_EXIT(pid < 0, "fork player")
         if(pid == 0){ // HIJO
             // cierro stdout 
             // dup pipe
             // cierro pipe que dupliqué
             // cierro los otros pipes porque no me sirven
-            
-            if(dup2(pipes[i][WRITE_END],STDOUT_FILENO) != 0){
-                perror("dup2");
-                exit(EXIT_FAILURE);
-            }
+            IF_EXIT(dup2(pipes[i][WRITE_END],STDOUT_FILENO) != 0,"dup2")
+
 
             // PENSAR SI QUIZÁS NO CONVIENE CERRAR SOLAMENTE PARA j!=i
 
             for(int j = 0; j < player_count; j++){ // close unused pipes
-                if(close(pipes[j][READ_END]) != 0){ 
-                    perror("close");
-                    exit(EXIT_FAILURE);
-                }
-                if(close(pipes[j][WRITE_END]) != 0){
-                    perror("close");
-                    exit(EXIT_FAILURE);
-                }
+                IF_EXIT(close(pipes[j][READ_END]) != 0, "close")
+                IF_EXIT(close(pipes[j][WRITE_END]) != 0, "close")
             }
-
-
             execv(players[i],(char * const *)board_dimensions);
-            perror("execv player");
-            exit(EXIT_FAILURE);
+            IF_EXIT(true,"execv player") // no debería llegar acá.
         } else if(pid > 0){ // PADRE
             // close unused pipes
+            IF_EXIT(close(pipes[i][WRITE_END]) != 0,"close")
+
             game->players[i].pid = pid;
-        } else { // ERROR
-            perror("fork player");
-            exit(EXIT_FAILURE);
         }
     }
 
@@ -251,14 +206,13 @@ int main(int argc, char const *argv[]){
 
     if(view_path != NULL){
         pid_t pid = fork();
+        IF_EXIT(pid < 0, "fork view")
         if(pid == 0){ 
             // execve
+            IF_EXIT(true,"execv view")
             exit(EXIT_FAILURE);
         } else if(pid > 0){
             view_pid = pid;
-        } else {
-            perror("fork view");
-            exit(EXIT_FAILURE);
         }
     }
 
