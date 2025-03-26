@@ -37,6 +37,39 @@ int main(int argc, char *argv[]) {
 
     // Bucle principal del jugador
     while (!game_state->has_finished) {
+
+        // lee estado de juego
+        sem_wait(&sync->reader_count_mutex); // bloquea el reader count
+        sync->readers_count++;  // incrementa el reader count
+        if (sync->readers_count == 1) { 
+            sem_wait(&sync->game_state_mutex); // si hay un solo lector bloquea el game state
+        }
+        sem_post(&sync->reader_count_mutex);
+
+        // chequea si el jugador está bloqueado    
+        // deberiamos pasar el id como arg cdo hacemos el execv de player para poder usarlo aca 
+        if (game_state->players[player_id].is_blocked) { 
+            // Liberar semáforos
+            sem_wait(&sync->reader_count_mutex);
+            sync->readers_count--;
+            if (sync->readers_count == 0) {
+                sem_post(&sync->game_state_mutex); // libera el game state
+            }
+            sem_post(&sync->reader_count_mutex); 
+            
+        }
+
+        // genera movimiento
+
+        // libera semáforos
+        sem_wait(&sync->reader_count_mutex);
+        sync->readers_count--;
+        if (sync->readers_count == 0) {
+            sem_post(&sync->game_state_mutex);
+        }
+        sem_post(&sync->reader_count_mutex);
+
+        // espera respuesta del master por el pipe
         
     }
 
