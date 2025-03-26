@@ -7,30 +7,27 @@
 #include <sys/stat.h>       // Para mode constants
 #include <semaphore.h>       // Para semaforos POSIX
 #include <unistd.h>         // Para sleep
+#include <time.h>
 #include "shared_memory.h"
 #include "constants.h"
+#include "macros.h"
 
 // Estructura para el estado del tablero
 
-//principal del jugador
+// Principal del jugador
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         fprintf(stderr, "Uso: %s <ancho> <alto>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
+    srand(getpid()); // provisorio, después ver como tunearlo para que sea más random aún
 
     int width = atoi(argv[1]);
-    if(width <= 0) {
-        perror("ancho inválido");
-        exit(EXIT_FAILURE);
-    }
+    IF_EXIT(width <= 0, "ancho inválido")
 
     int height = atoi(argv[2]);
-    if(height <= 0) {
-        perror("alto inválido");
-        exit(EXIT_FAILURE);
-    }
+    IF_EXIT(height <= 0, "alto inválido")
 
     // Conectar a la memoria compartida del juego
     game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t));
