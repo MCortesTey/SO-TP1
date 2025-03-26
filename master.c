@@ -82,7 +82,7 @@ int main(int argc, char const *argv[]){
 
     int width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, delay = DEFAULT_DELAY, timeout = DEFAULT_TIMEOUT, seed = DEFAULT_SEED;
     char * view_path = DEFAULT_VIEW;
-    size_t player_count = 0;
+    int player_count = 0;
     char players[MAX_PLAYERS][MAX_NAME_LEN];
     int c;
     while((c = getopt (argc, (char * const*)argv, "w:h:d:t:s:v:p:")) != -1){
@@ -147,7 +147,8 @@ int main(int argc, char const *argv[]){
                     fprintf(stderr, "La opción -%c requiere un argumento.\n", optopt);
                 else
                     fprintf(stderr, "Opción desconocida `-%c'.\n", optopt);
-                // sin break así baja al default !
+                exit(EXIT_FAILURE);
+                break;
             default:
                 exit(EXIT_FAILURE);
         }
@@ -161,8 +162,6 @@ int main(int argc, char const *argv[]){
     game_sync* sync = createGameSync();
 
     char board_dimensions[2][256];
-    // board_dimensions[0] = alto
-    // board_dimensions[1] = ancho
     sprintf(board_dimensions[0],"%d",height);
     sprintf(board_dimensions[1],"%d",width);
     
@@ -171,8 +170,14 @@ int main(int argc, char const *argv[]){
 
     int pipes[MAX_PLAYER_NUMBER][2];
 
+    // Crear pipes para jugadores
     for(int i = 0; i < player_count; i++){
         IF_EXIT(pipe(pipes[i]) == -1, "pipe")
+    }
+
+    // Crear pipe para view si existe
+    if(view_path != NULL){
+        IF_EXIT(pipe(pipes[player_count]) == -1, "pipe view")
     }
 
     for(int i=0; i < player_count; i++){
@@ -192,7 +197,8 @@ int main(int argc, char const *argv[]){
                 IF_EXIT(close(pipes[j][READ_END]) != 0, "close")
                 IF_EXIT(close(pipes[j][WRITE_END]) != 0, "close")
             }
-            execv(players[i],(char * const *)board_dimensions);
+            char *player_args[] = {players[i], board_dimensions[0], board_dimensions[1], NULL};
+            execv(players[i], player_args);
             IF_EXIT(true,"execv player") // no debería llegar acá.
         } else if(pid > 0){ // PADRE
             // close unused pipes
@@ -202,18 +208,41 @@ int main(int argc, char const *argv[]){
         }
     }
 
-    int view_pid;
-
+    //int view_pid;
     if(view_path != NULL){
         pid_t pid = fork();
         IF_EXIT(pid < 0, "fork view")
         if(pid == 0){ 
-            // execve
+            // Redirigir stdout al pipe del view
+            IF_EXIT(dup2(pipes[player_count][WRITE_END], STDOUT_FILENO) != 0, "dup2")
+
+            // Cerrar todos los pipes que no se usan
+            for(int j = 0; j < player_count + 1; j++){ 
+                IF_EXIT(close(pipes[j][READ_END]) != 0, "close")
+                IF_EXIT(close(pipes[j][WRITE_END]) != 0, "close")
+            }
+
+            char *view_args[] = {view_path, board_dimensions[0], board_dimensions[1], NULL};
+            execv(view_path, view_args);
             IF_EXIT(true,"execv view")
             exit(EXIT_FAILURE);
         } else if(pid > 0){
-            view_pid = pid;
+            //view_pid = pid;
         }
+    }
+    
+
+    // Bucle principal del master
+    while (!game->has_finished) {
+
+        // Leer movimientos de los jugadores
+       
+        // Señalar al view que hay cambios para imprimir
+        sem_post(&sync->print_needed);
+        
+        // Esperar a que el view termine de imprimir
+        sem_wait(&sync->print_done);
+
     }
 
     return 0;
