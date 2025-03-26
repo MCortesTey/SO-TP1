@@ -21,11 +21,11 @@
 #define DEFAULT_SEED time(NULL)
 #define DEFAULT_VIEW NULL
 
+enum pipeEnds{READ_END, WRITE_END};
 
 #define MIN_PLAYER_NUMBER 1
 #define MAX_PLAYER_NUMBER 9
 #define MAX_NAME_LEN 16
-
 
 void init_shared_sem(sem_t * sem, int initial_value){
     if(sem_init(sem,1,initial_value) == -1) {
@@ -91,7 +91,7 @@ int main(int argc, char const *argv[]){
     size_t player_count = 0;
     char* players[MAX_PLAYERS];
     int c;
-    while((c = getopt (argc, argv, "w:h:d:t:s:v:p:")) != -1){
+    while((c = getopt (argc, (char * const*)argv, "w:h:d:t:s:v:p:")) != -1){
         switch(c){
             case 'w':
                 width = atoi(optarg);
@@ -196,15 +196,52 @@ int main(int argc, char const *argv[]){
     sprintf(board_dimensions[0],"%d",height);
     sprintf(board_dimensions[1],"%d",width);
     
-    for(int i=0; i<player_count; i++){
+    // preparaciones para el fork ! 
+    // pipe
+
+    int pipes[MAX_PLAYER_NUMBER][2];
+
+    for(int i = 0; i < player_count; i++){
+        if(pipe(pipes[i]) == -1){ // crea pipes para cada uno de los procesos
+            perror("pipe");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    for(int i=0; i < player_count; i++){
         pid_t pid = fork();
-        if(pid == 0){ 
+        if(pid == 0){ // HIJO
+            // cierro stdout 
+            // dup pipe
+            // cierro pipe que dupliqué
+            // cierro los otros pipes porque no me sirven
+            
+            if(dup2(pipes[i][WRITE_END],STDOUT_FILENO) != 0){
+                perror("dup2");
+                exit(EXIT_FAILURE);
+            }
+
+            // PENSAR SI QUIZÁS NO CONVIENE CERRAR SOLAMENTE PARA j!=i
+
+            for(int j = 0; j < player_count; j++){ // close unused pipes
+                if(close(pipes[j][READ_END]) != 0){ 
+                    perror("close");
+                    exit(EXIT_FAILURE);
+                }
+                if(close(pipes[j][WRITE_END]) != 0){
+                    perror("close");
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+
             execv(players[i],(char * const *)board_dimensions);
             perror("execv player");
             exit(EXIT_FAILURE);
-        } else if(pid > 0){
+        } else if(pid > 0){ // PADRE
+            // close unused pipes
             game->players[i].pid = pid;
-        } else {
+        } else { // ERROR
             perror("fork player");
             exit(EXIT_FAILURE);
         }
