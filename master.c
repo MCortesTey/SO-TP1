@@ -89,7 +89,7 @@ int main(int argc, char const *argv[]){
     int width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, delay = DEFAULT_DELAY, timeout = DEFAULT_TIMEOUT, seed = DEFAULT_SEED;
     char * view_path = DEFAULT_VIEW;
     size_t player_count = 0;
-    char* players[MAX_PLAYERS];
+    char players[MAX_PLAYERS][MAX_NAME_LEN];
     int c;
     while((c = getopt (argc, (char * const*)argv, "w:h:d:t:s:v:p:")) != -1){
         switch(c){
@@ -149,8 +149,7 @@ int main(int argc, char const *argv[]){
                     fprintf(stderr, "Error: Player name too long (max %d characters).\n", MAX_NAME_LEN);
                     exit(EXIT_FAILURE);
                 }
-                // strdup hace una copia del path del jugador en memoria pq optarg es temporal y se borra cuando termina main
-                players[player_count++] = strdup(optarg);
+                strncpy(players[player_count++],optarg,MAX_NAME_LEN); // TODO REVISAR ESTO... PONELE QUE ES PROG DEFENSIVA
                 
                 // Agarramos los jugadores que vienen después
                 while (optind < argc && argv[optind][0] != '-') {
@@ -163,7 +162,8 @@ int main(int argc, char const *argv[]){
                         fprintf(stderr, "Error: Player name too long (max %d characters).\n", MAX_NAME_LEN);
                         exit(EXIT_FAILURE);
                     }
-                    players[player_count++] = strdup(argv[optind++]);
+
+                    strncpy(players[player_count++],argv[optind++],MAX_NAME_LEN); // TODO REVISAR ESTO...
                 }
                 
                 if (player_count < MIN_PLAYER_NUMBER) {
@@ -260,11 +260,6 @@ int main(int argc, char const *argv[]){
             perror("fork view");
             exit(EXIT_FAILURE);
         }
-    }
-
-    // free: Liberamos la memoria que pedimos con strdup en lineas 153 y 166
-    for(int i = 0; i < player_count; i++) {
-        free(players[i]);
     }
 
     return 0;
