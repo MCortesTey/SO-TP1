@@ -1,5 +1,5 @@
-#ifndef SHM_H
-#define SHM_H
+#ifndef SHM_UTILS_H
+#define SHM_UTILS_H
 
 #include <stddef.h>
 

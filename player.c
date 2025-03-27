@@ -48,18 +48,18 @@ int main(int argc, char *argv[]) {
 
         // chequea si el jugador está bloqueado    
         // deberiamos pasar el id como arg cdo hacemos el execv de player para poder usarlo aca 
-        if (game_state->players[player_id].is_blocked) { 
-            // Liberar semáforos
-            sem_wait(&sync->reader_count_mutex);
-            sync->readers_count--;
-            if (sync->readers_count == 0) {
-                sem_post(&sync->game_state_mutex); // libera el game state
-            }
-            sem_post(&sync->reader_count_mutex); 
+        // if (game_state->players[player_id].is_blocked) { 
+        //     // Liberar semáforos
+        //     sem_wait(&sync->reader_count_mutex);
+        //     sync->readers_count--;
+        //     if (sync->readers_count == 0) {
+        //         sem_post(&sync->game_state_mutex); // libera el game state
+        //     }
+        //     sem_post(&sync->reader_count_mutex); 
             
-        }
+        // }
 
-        // genera movimiento
+        // TODO: genera movimiento
 
         // libera semáforos
         sem_wait(&sync->reader_count_mutex);
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
         }
         sem_post(&sync->reader_count_mutex);
 
-        // espera respuesta del master por el pipe
+        // TODO:espera respuesta del master por el pipe
         
     }
 
