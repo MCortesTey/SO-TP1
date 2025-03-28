@@ -13,17 +13,23 @@
 #include "constants.h"
 #include "shared_memory.h"
 
-//colores en ANSI
+// limpiar pantalla
+#define CLEAR_SCREEN printf("\033[2J\033[H")
+
+// Colores de fondo para los jugadores
 #define COLOR_RESET   "\x1b[0m"
-#define COLOR_RED     "\x1b[31m"
-#define COLOR_GREEN   "\x1b[32m"
-#define COLOR_YELLOW  "\x1b[33m"
-#define COLOR_BLUE    "\x1b[34m"
-#define COLOR_MAGENTA "\x1b[35m"
-#define COLOR_CYAN    "\x1b[36m"
-#define COLOR_WHITE   "\x1b[37m"
-#define COLOR_PURPLE  "\x1b[95m"
-#define COLOR_ORANGE  "\x1b[38;5;208m"
+#define COLOR_RED     "\x1b[41m"    // Fondo rojo
+#define COLOR_GREEN   "\x1b[42m"    // Fondo verde
+#define COLOR_YELLOW  "\x1b[43m"        // Fondo amarillo
+#define COLOR_BLUE    "\x1b[44m"        // Fondo azul
+#define COLOR_MAGENTA "\x1b[45m"        // Fondo magenta
+#define COLOR_CYAN    "\x1b[46m"        // Fondo cyan
+#define COLOR_WHITE   "\x1b[47m"        // Fondo blanco
+#define COLOR_PURPLE  "\x1b[105m"       // Fondo púrpura brillante
+#define COLOR_ORANGE  "\x1b[48;5;208m"  // Fondo naranja
+
+// Color para los números (texto negro sobre fondo blanco)
+#define SCORE_COLOR   "\x1b[30;47m"  // Texto negro sobre fondo blanco
 
 // Array de colores para los jugadores
 const char* player_colors[] = {
@@ -40,18 +46,38 @@ const char* player_colors[] = {
     COLOR_GREEN
 };
 
-// Función auxiliar para limpiar la pantalla
-void clear_screen() {
-    printf("\033[2J\033[H");  // Secuencia ANSI para limpiar pantalla y mover cursor
-}
+// Colores de texto para la información de jugadores
+#define TEXT_RED     "\x1b[31m"
+#define TEXT_GREEN   "\x1b[32m"
+#define TEXT_YELLOW  "\x1b[33m"
+#define TEXT_BLUE    "\x1b[34m"
+#define TEXT_MAGENTA "\x1b[35m"
+#define TEXT_CYAN    "\x1b[36m"
+#define TEXT_WHITE   "\x1b[37m"
+#define TEXT_PURPLE  "\x1b[95m"
+#define TEXT_ORANGE  "\x1b[38;5;208m"
+
+// Array de colores de texto para la información de jugadores
+const char* text_colors[] = {
+    TEXT_RED,
+    TEXT_GREEN,
+    TEXT_YELLOW,
+    TEXT_BLUE,
+    TEXT_MAGENTA,
+    TEXT_CYAN,
+    TEXT_WHITE,
+    TEXT_PURPLE,
+    TEXT_ORANGE
+};
 
 // Función para imprimir el tablero
 void print_board(game_t *game_state) {
-    clear_screen();
+    CLEAR_SCREEN;
+    
     
     // Imprimir borde superior
     printf("┌");
-    for(int x = 0; x < game_state->board_width; x++) {
+    for(int x = 0; x < game_state->board_width * 3; x++) {
         printf("─");
     }
     printf("┐\n");
@@ -62,16 +88,22 @@ void print_board(game_t *game_state) {
         for(int x = 0; x < game_state->board_width; x++) {
             int cell = game_state->board_p[y * game_state->board_width + x];
             if(cell > 0) {
-                printf("%d",cell);  // Celda vacía. Debería ser puntaje
+                // Celda con puntaje - número negro sobre fondo blanco
+                printf("%s%2d %s", SCORE_COLOR, cell, COLOR_RESET);
             } else {
-                //printf("%s",player_colors[-cell]);
-                //wprintf(L"█\n");
-                printf("%s%d%s", player_colors[-cell], -cell+1, COLOR_RESET);
-                //printf("%s",COLOR_RESET);
+                // Jugador - bloque de color sólido
+                printf("%s   %s", player_colors[-cell], COLOR_RESET);
             }
         }
         printf("│\n");  // Borde derecho
     }
+
+    // Imprimir borde inferior
+    printf("└");
+    for(int x = 0; x < game_state->board_width * 3; x++) {
+        printf("─");
+    }
+    printf("┘\n");
 
     // Imprimir información de los jugadores con sus respectivos colores
     printf("\nJugadores:\n");
@@ -79,7 +111,7 @@ void print_board(game_t *game_state) {
         player_t player = game_state->players[i];
         if(player.pid != 0) {  // Si el jugador está activo
             printf("%sJugador %d%s (%s): Score=%d, Pos=(%d,%d)%s\n", 
-                player_colors[i],
+                text_colors[i],
                 i + 1, 
                 COLOR_RESET,
                 player.name, 
@@ -89,7 +121,7 @@ void print_board(game_t *game_state) {
                 player.is_blocked ? " [BLOQUEADO]" : "");
         }
     }
-    fflush(stdout);  // Asegurar que se imprima inmediatamente
+    fflush(stdout);
 }
 
 int main(int argc, char *argv[] ){

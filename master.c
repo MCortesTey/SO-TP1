@@ -37,7 +37,7 @@ void init_shared_sem(sem_t * sem, int initial_value){
 }
 
 game_sync * createGameSync(){
-    game_sync * game_sync_ptr = create_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH ); // 0666
+    game_sync * game_sync_ptr = create_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP); // 0666
     IF_EXIT(IS_NULL(game_sync_ptr),"Could not create game_sync")
 
     // setear semáforos iniciales
@@ -54,7 +54,7 @@ game_sync * createGameSync(){
 
 
 game_t * createGame(int width, int height, int n_players){
-    game_t * game_t_ptr = create_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), S_IRUSR | S_IWUSR | S_IROTH); // 0644
+    game_t * game_t_ptr = create_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP); // 0644
     IF_EXIT(IS_NULL(game_t_ptr),"Could not create game_state")
 
     game_t_ptr->board_width = width;

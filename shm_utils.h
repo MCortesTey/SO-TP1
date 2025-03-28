@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-void* create_shm(char *name, size_t size, int flags);
+void* create_shm(char *name, size_t size, int mode);
 
 void* connect_shm(char * name, size_t size, int flags);
 #endif // SHM_H

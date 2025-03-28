@@ -78,6 +78,7 @@ int main(int argc, char *argv[]) {
         // TODO:espera respuesta del master por el pipe
         
         putchar((i++)%8);
+        
         usleep(2000);
     }
 
