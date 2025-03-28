@@ -24,7 +24,7 @@ typedef struct {
     unsigned int player_number;     // Cantidad de jugadores
     player_t players[MAX_PLAYERS];  // Lista de jugadores
     bool has_finished;              // Indica si el juego se ha terminado
-    int board_p[];                  // Puntero al comienzo del tablero. fila-0, fila-1, ..., fila-n-1
+    int board_p[];                  // Puntero al comienzo del tablero. fila-0, fila-1, ..., fila-n-1. Flexible Array.
 } game_t;
 
 typedef struct {

@@ -6,10 +6,13 @@
 #include <time.h>
 #include <sys/shm.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <unistd.h>
 #include <semaphore.h>
 #include <limits.h>
 #include <getopt.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include "shared_memory.h"
 #include "shm_utils.h"
 #include "constants.h"
@@ -33,10 +36,8 @@ void init_shared_sem(sem_t * sem, int initial_value){
     IF_EXIT(sem_init(sem,1,initial_value) == -1,"sem_init")
 }
 
-
-
 game_sync * createGameSync(){
-    game_sync * game_sync_ptr = create_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync));
+    game_sync * game_sync_ptr = create_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH ); // 0666
     IF_EXIT(IS_NULL(game_sync_ptr),"Could not create game_sync")
 
     // setear semáforos iniciales
@@ -50,8 +51,10 @@ game_sync * createGameSync(){
     return game_sync_ptr;
 }
 
+
+
 game_t * createGame(int width, int height, int n_players){
-    game_t * game_t_ptr = create_shm(SHM_GAME_PATH, sizeof(game_t)); // crea memoria compartida
+    game_t * game_t_ptr = create_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), S_IRUSR | S_IWUSR | S_IROTH); // 0644
     IF_EXIT(IS_NULL(game_t_ptr),"Could not create game_state")
 
     game_t_ptr->board_width = width;
@@ -237,6 +240,8 @@ int main(int argc, char const *argv[]){
 
         // Leer movimientos de los jugadores
        
+
+
         // Señalar al view que hay cambios para imprimir
         sem_post(&sync->print_needed);
         
@@ -244,6 +249,12 @@ int main(int argc, char const *argv[]){
         sem_wait(&sync->print_done);
 
     }
+
+    IF_EXIT(munmap(game,sizeof(game_t) + sizeof(int)*(width*height)) == -1, "munmap game")
+    IF_EXIT(munmap(sync,sizeof(game_sync)) == -1, "munmap game")
+
+    IF_EXIT(shm_unlink(SHM_GAME_PATH) == -1, "shm_unlink game")
+    IF_EXIT(shm_unlink(SHM_GAME_SEMS_PATH) == -1, "shm_unlink sync")
 
     return 0;
 }
