@@ -51,5 +51,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+*.sh
 /.vscode
 .bash_history
