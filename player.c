@@ -16,6 +16,10 @@
 
 // Principal del jugador
 
+//unsigned char generate_move(){ 
+// return (unsigned char) (rand()%8 );
+//}
+
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         fprintf(stderr, "Uso: %s <ancho> <alto>\n", argv[0]);
@@ -30,10 +34,10 @@ int main(int argc, char *argv[]) {
     IF_EXIT(height <= 0, "alto inválido")
 
     // Conectar a la memoria compartida del juego
-    game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t));
+    game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t), O_RDONLY);
 
     // Conectar a la memoria compartida de sincronización
-    game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync));
+    game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), O_RDWR);
 
     int i = 0;    // Bucle principal del jugador
     while (!game_state->has_finished) {
@@ -61,7 +65,7 @@ int main(int argc, char *argv[]) {
 
         // TODO: genera movimiento
         //unsigned char move = generate_move();
-        // ssize_t bytes = write(STDOUT_FILENO, &move, sizeof(unsigned char));
+        // IF_EXIT(write(STDOUT_FILENO, &move, sizeof(unsigned char)) == -1 ), "write") ;
 
         // libera semáforos
         sem_wait(&sync->reader_count_mutex);

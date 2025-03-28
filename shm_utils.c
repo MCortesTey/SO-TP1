@@ -5,33 +5,35 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include "shm_utils.h"
 #include "macros.h"
 
+void* create_shm(char *name, size_t size, int flags) {
+    int fd = shm_open(name, O_RDWR | O_CREAT, flags);
+    IF_EXIT(fd == -1, "shm_open");
 
-void* create_shm(char * name, size_t size){ // void* es un puntero. mismo retorno que malloc
-	int fd = shm_open(name, O_RDWR | O_CREAT , 0666); // O_RDWR | O_CREAT --> quiero crear, con permiso de lectura y escritura.
+    IF_EXIT(ftruncate(fd, size) == -1, "ftruncate");
 
-	IF_EXIT(fd == -1, "shm_open")
-	
-	IF_EXIT(ftruncate(fd, size) == -1,"ftruncate")
+    void *p = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    IF_EXIT(p == MAP_FAILED, "mmap");
 
-	void *p = mmap(NULL, size, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0); // si saco el fd los demás parámetros no tiene relación!
-	
-	IF_EXIT(p == MAP_FAILED,"mmap")
-	
-	return p;
+    close(fd);  // No necesitamos el descriptor después de mapear
+
+    return p;
 }
 
-void* connect_shm(char * name, size_t size){
-    // Intentar abrir la memoria compartida existente
-    int shm_fd = shm_open(name, O_RDWR, 0666);
+void* connect_shm(char *name, size_t size, int flags) {
+    IF_EXIT(!(flags == O_RDONLY || flags == O_RDWR), "Modo de apertura no permitido para la memoria compartida");
 
-	IF_EXIT(shm_fd < 0, "Error al abrir la memoria compartida")
+    // Abrir la memoria compartida en el modo correcto
+    int shm_fd = shm_open(name, flags, 0);
+    IF_EXIT(shm_fd < 0, "Error al abrir la memoria compartida");
 
-    // Mapear la memoria compartida
-    void* return_ptr = mmap(0, sizeof(size), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    
-	IF_EXIT(return_ptr == MAP_FAILED,"Error al mapear la memoria compartida")
-	
-	return return_ptr;
+    // Mapear la memoria compartida con el tamaño correcto
+    void* return_ptr = mmap(0, size, (flags & O_RDWR) ? (PROT_READ | PROT_WRITE) : PROT_READ, MAP_SHARED, shm_fd, 0);
+    IF_EXIT(return_ptr == MAP_FAILED, "Error al mapear la memoria compartida");
+
+    close(shm_fd); // Cerrar el descriptor de archivo después del mmap
+
+    return return_ptr;
 }

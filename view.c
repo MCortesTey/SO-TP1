@@ -2,10 +2,13 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <semaphore.h>
-#include <sys/mman.h>
-#include <sys/shm.h>
 #include <wchar.h>
 #include <locale.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "shm_utils.h"
 #include "constants.h"
 #include "shared_memory.h"
