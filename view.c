@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <semaphore.h>
 #include <sys/mman.h>
+#include <sys/shm.h>
+#include <wchar.h>
+#include <locale.h>
 #include "shm_utils.h"
 #include "constants.h"
 #include "shared_memory.h"
@@ -55,24 +58,17 @@ void print_board(game_t *game_state) {
         printf("│");  // Borde izquierdo
         for(int x = 0; x < game_state->board_width; x++) {
             int cell = game_state->board_p[y * game_state->board_width + x];
-            if(cell == 0) {
-                printf(" ");  // Celda vacía
-            } else if(cell > 0 && cell <= MAX_PLAYERS) {
-                // Imprimir número del jugador con su color correspondiente
-                printf("%s%d%s", player_colors[cell-1], cell, COLOR_RESET);
+            if(cell > 0) {
+                printf("%d",cell);  // Celda vacía. Debería ser puntaje
             } else {
-                printf("X");  // Obstáculo o celda inválida
+                //printf("%s",player_colors[-cell]);
+                //wprintf(L"█\n");
+                printf("%s%d%s", player_colors[-cell], -cell+1, COLOR_RESET);
+                //printf("%s",COLOR_RESET);
             }
         }
         printf("│\n");  // Borde derecho
     }
-
-    // Imprimir borde inferior
-    printf("└");
-    for(int x = 0; x < game_state->board_width; x++) {
-        printf("─");
-    }
-    printf("┘\n");
 
     // Imprimir información de los jugadores con sus respectivos colores
     printf("\nJugadores:\n");
@@ -102,8 +98,8 @@ int main(int argc, char *argv[] ){
     //int width = atoi(argv[1]);
     //int height = atoi(argv[2]); 
 
-    game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync));
-    game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t));
+    game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), O_RDWR);
+    game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t), O_RDONLY);
 
     // Loop principal de la vista
     while (!game_state->has_finished) {

@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     // Conectar a la memoria compartida de sincronización
     game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync));
 
-    // Bucle principal del jugador
+    int i = 0;    // Bucle principal del jugador
     while (!game_state->has_finished) {
 
         // lee estado de juego
@@ -60,6 +60,8 @@ int main(int argc, char *argv[]) {
         // }
 
         // TODO: genera movimiento
+        //unsigned char move = generate_move();
+        // ssize_t bytes = write(STDOUT_FILENO, &move, sizeof(unsigned char));
 
         // libera semáforos
         sem_wait(&sync->reader_count_mutex);
@@ -71,6 +73,8 @@ int main(int argc, char *argv[]) {
 
         // TODO:espera respuesta del master por el pipe
         
+        putchar((i++)%8);
+        usleep(2000);
     }
 
     // Limpieza
