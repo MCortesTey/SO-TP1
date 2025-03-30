@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
     }
 
     IF_EXIT(player_id < 0, "player could not identify itself")
-    //bool cut = false;
+    bool cut = false;
     while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
 
         // lee estado de juego
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
 
         // TODO: genera movimiento
         unsigned char move = generate_move(game_state->board_width,game_state->board_height,game_state->board_p,game_state->players[player_id].x_coord,game_state->players[player_id].y_coord);
-        /*
+        
         // Si el movimiento generado no es NONE, escribirlo en stdout
         if(move != NONE){
             IF_EXIT(write(STDOUT_FILENO, &move, 1) == -1, "Error al escribir movimiento en stdout")
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
             // Si no hay movimientos válidos, marcar la bandera para salir del bucle
             cut = true;
         }
-        */
+        
 
         // libera semáforos
         sem_wait(&sync->reader_count_mutex);
@@ -150,18 +150,14 @@ int main(int argc, char *argv[]) {
         }
         sem_post(&sync->reader_count_mutex);
 
-        /*
+        
         if(cut){
             // si no hay movimientos válidos, salir del bucle
             break;
         }
-        */
+        
 
-        if(move != NONE){
-            IF_EXIT(write(STDOUT_FILENO, &move, 1) == -1, "Error al escribir movimiento en stdout")
-        } else {
-            break; // si no hay movimientos válidos, salir del bucle
-        }
+
 
         // TODO:espera respuesta del master por el pipe
 
