@@ -154,14 +154,8 @@ int main(int argc, char *argv[]) {
         if(cut){
             // si no hay movimientos válidos, salir del bucle
             break;
-        }
-        
 
-
-
-        // TODO:espera respuesta del master por el pipe
-
-        usleep(300000); // 20ms de espera para no saturar el CPU
+        usleep(20000); 
     }
 
     // Limpieza
