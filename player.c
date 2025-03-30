@@ -16,19 +16,19 @@
 
 // Principal del jugador
 
-enum MOVEMENTS {NONE = -1, UP = 0, UP_RIGHT, RIGHT, DOWN_RIGHT, DOWN, DOWN_LEFT, LEFT, UP_LEFT};
+enum MOVEMENTS {UP = 0, UP_RIGHT, RIGHT, DOWN_RIGHT, DOWN, DOWN_LEFT, LEFT, UP_LEFT, NONE};
 
-char generate_move(int width, int height, int board[][height], int x_pos, int y_pos);
+unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos);
 
 #ifdef FIRST_POSSIBLE
 
-char generate_move(int width, int height, int board[][height], int x_pos, int y_pos){ 
+unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){ 
     int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
     int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
     for(int i = UP; i <= UP_LEFT; i++){
         int x = x_pos + dx[i];
         int y = y_pos + dy[i];
-        if (x >= 0 && x < width && y >= 0 && y < height && board[x][y] > 0) {
+        if (x >= 0 && x < width && y >= 0 && y < height && board[y * width + x] > 0) {
             return i; // devuelve el movimiento
         }
     }
@@ -37,7 +37,7 @@ char generate_move(int width, int height, int board[][height], int x_pos, int y_
 #endif
 
 #ifdef BEST_SCORE
-char generate_move(int width, int height, int board[][height], int x_pos, int y_pos){
+unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){
     int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
     int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
     int best_move = NONE;
@@ -46,8 +46,8 @@ char generate_move(int width, int height, int board[][height], int x_pos, int y_
     for (int i = UP; i <= UP_LEFT; i++) {
         int x = x_pos + dx[i], y = y_pos + dy[i];
         if (x >= 0 && x < width && y >= 0 && y < height) {
-            if (board[x][y] > max_score) {
-                max_score = board[x][y];
+            if (board[y * width + x] > max_score) {
+                max_score = board[y * width + x];
                 best_move = i;
             }
         }
@@ -57,7 +57,7 @@ char generate_move(int width, int height, int board[][height], int x_pos, int y_
 #endif 
 
 #ifdef RANDOM
-char generate_move(int width, int height, int board[][height], int x_pos, int y_pos){
+unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){
     int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
     int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
     int valid_moves[8];
@@ -65,7 +65,7 @@ char generate_move(int width, int height, int board[][height], int x_pos, int y_
 
     for (int i = UP; i <= UP_LEFT; i++) {
         int x = x_pos + dx[i], y = y_pos + dy[i];
-        if (x >= 0 && x < width && y >= 0 && y < height && board[x][y] > 0) {
+        if (x >= 0 && x < width && y >= 0 && y < height && board[y * width + x] > 0) {
             valid_moves[num_valid_moves++] = i;
         }
     }
@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
     }
 
     IF_EXIT(player_id < 0, "player could not identify itself")
-    bool cut = false;
+    //bool cut = false;
     while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
 
         // lee estado de juego
@@ -131,12 +131,16 @@ int main(int argc, char *argv[]) {
         }
 
         // TODO: genera movimiento
-        char move = generate_move(game_state->board_width,game_state->board_height,(int (*)[height])game_state->board_p,game_state->players[player_id].x_coord,game_state->players[player_id].y_coord);
+        unsigned char move = generate_move(game_state->board_width,game_state->board_height,game_state->board_p,game_state->players[player_id].x_coord,game_state->players[player_id].y_coord);
+        /*
+        // Si el movimiento generado no es NONE, escribirlo en stdout
         if(move != NONE){
             IF_EXIT(write(STDOUT_FILENO, &move, 1) == -1, "Error al escribir movimiento en stdout")
         } else {
-            cut = true; // si no hay movimientos válidos, salir del bucle
+            // Si no hay movimientos válidos, marcar la bandera para salir del bucle
+            cut = true;
         }
+        */
 
         // libera semáforos
         sem_wait(&sync->reader_count_mutex);
@@ -146,14 +150,22 @@ int main(int argc, char *argv[]) {
         }
         sem_post(&sync->reader_count_mutex);
 
+        /*
         if(cut){
             // si no hay movimientos válidos, salir del bucle
             break;
         }
+        */
+
+        if(move != NONE){
+            IF_EXIT(write(STDOUT_FILENO, &move, 1) == -1, "Error al escribir movimiento en stdout")
+        } else {
+            break; // si no hay movimientos válidos, salir del bucle
+        }
 
         // TODO:espera respuesta del master por el pipe
 
-        usleep(30000); // 20ms de espera para no saturar el CPU
+        usleep(300000); // 20ms de espera para no saturar el CPU
     }
 
     // Limpieza

@@ -7,6 +7,8 @@ OBJS = master.o player.o view.o shm_utils.o
 
 all: master player_first_possible player_sparse view
 
+all_players: player_first_possible player_best_score player_random
+
 master: master.o shm_utils.o
 	$(CC) -o master master.o shm_utils.o $(LDFLAGS)
 
@@ -35,4 +37,4 @@ view: view.o shm_utils.o
 	$(CC) $(GCCFLAGS) -c $<
 
 clean:
-	rm -f *.o master player_first_possible player_sparse view
+	rm -f *.o master player_first_possible player_random player_best_score view
