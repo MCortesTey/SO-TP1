@@ -16,68 +16,24 @@
 
 // Principal del jugador
 
-enum MOVEMENTS {NONE = -1, UP, UP_RIGHT, RIGHT, DOWN_RIGHT, DOWN, DOWN_LEFT, LEFT, UP_LEFT};
+enum MOVEMENTS {NONE = -1, UP = 0, UP_RIGHT, RIGHT, DOWN_RIGHT, DOWN, DOWN_LEFT, LEFT, UP_LEFT};
+
+char generate_move(int width, int height, int board[][height], int x_pos, int y_pos);
 
 #ifdef FIRST_POSSIBLE
 
 char generate_move(int width, int height, int board[][height], int x_pos, int y_pos){ 
+    int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
+    int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
     for(int i = UP; i <= UP_LEFT; i++){
-        int x = x_pos;
-        int y = y_pos;
-        switch(i){
-            case UP:
-                y--;
-                break;
-            case UP_RIGHT:
-                x++;
-                y--;
-                break;
-            case RIGHT:
-                x++;
-                break;
-            case DOWN_RIGHT:
-                x++;
-                y++;
-                break;
-            case DOWN:
-                y++;
-                break;
-            case DOWN_LEFT:
-                x--;
-                y++;
-                break;
-            case LEFT:
-                x--;
-                break;
-            case UP_LEFT:
-                x--;
-                y--;
-                break;
-        }
+        int x = x_pos + dx[i];
+        int y = y_pos + dy[i];
         if (x >= 0 && x < width && y >= 0 && y < height && board[x][y] > 0) {
             return i; // devuelve el movimiento
         }
     }
     return NONE; // si no hay movimientos válidos, devuelve NONE
 }
-
-#endif
-#ifdef SPARSE
-char generate_move(int width, int height, int board[][height], int x_pos, int y_pos) {
-    int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
-    int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
-    int best_move = NONE, max_value = 0;
-
-    for (int i = UP; i <= UP_LEFT; i++) {
-        int x = x_pos + dx[i], y = y_pos + dy[i];
-        if (x >= 0 && x < width && y >= 0 && y < height && board[x][y] > max_value) {
-            max_value = board[x][y];
-            best_move = i;
-        }
-    }
-    return best_move;
-}
-
 #endif
 
 #ifdef BEST_SCORE
@@ -97,6 +53,27 @@ char generate_move(int width, int height, int board[][height], int x_pos, int y_
         }
     }
     return best_move;
+}
+#endif 
+
+#ifdef RANDOM
+char generate_move(int width, int height, int board[][height], int x_pos, int y_pos){
+    int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
+    int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
+    int valid_moves[8];
+    int num_valid_moves = 0;
+
+    for (int i = UP; i <= UP_LEFT; i++) {
+        int x = x_pos + dx[i], y = y_pos + dy[i];
+        if (x >= 0 && x < width && y >= 0 && y < height && board[x][y] > 0) {
+            valid_moves[num_valid_moves++] = i;
+        }
+    }
+
+    if (num_valid_moves > 0) {
+        return valid_moves[rand() % num_valid_moves]; // devuelve un movimiento aleatorio
+    }
+    return NONE; // si no hay movimientos válidos
 }
 #endif
 
@@ -121,6 +98,7 @@ int main(int argc, char *argv[]) {
 
     int player_id = -1; // el jugador va a identificarse a sí mismo!!
     pid_t my_pid = getpid();
+
     for (player_id = 0; player_id < game_state->player_number; player_id++){
         if(game_state->players[player_id].pid == my_pid){
             break;
@@ -128,8 +106,8 @@ int main(int argc, char *argv[]) {
     }
 
     IF_EXIT(player_id < 0, "player could not identify itself")
-
-    while (!game_state->has_finished || !game_state->players[player_id].is_blocked) {
+    bool cut = false;
+    while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
 
         // lee estado de juego
         sem_wait(&sync->reader_count_mutex); // bloquea el reader count
@@ -141,23 +119,24 @@ int main(int argc, char *argv[]) {
         sem_post(&sync->reader_count_mutex);
 
         // chequea si el jugador está bloqueado    
-        // deberiamos pasar el id como arg cdo hacemos el execv de player para poder usarlo aca 
-        // if (game_state->players[player_id].is_blocked) { 
-        //     // Liberar semáforos
-        //     sem_wait(&sync->reader_count_mutex);
-        //     sync->readers_count--;
-        //     if (sync->readers_count == 0) {
-        //         sem_post(&sync->game_state_mutex); // libera el game state
-        //     }
-        //     sem_post(&sync->reader_count_mutex); 
-            
-        // }
+        if (game_state->players[player_id].is_blocked) { 
+            // Liberar semáforos
+            sem_post(&sync->reader_count_mutex);
+            sync->readers_count--;
+            if (sync->readers_count == 0) {
+                sem_post(&sync->game_state_mutex); // libera el game state
+            }
+            sem_post(&sync->reader_count_mutex); 
+            break; // salir del bucle si está bloqueado
+        }
 
         // TODO: genera movimiento
         char move = generate_move(game_state->board_width,game_state->board_height,(int (*)[height])game_state->board_p,game_state->players[player_id].x_coord,game_state->players[player_id].y_coord);
-        IF_EXIT(write(STDOUT_FILENO, &move, sizeof(unsigned char)) == -1 , "write")
-
-
+        if(move != NONE){
+            IF_EXIT(write(STDOUT_FILENO, &move, 1) == -1, "Error al escribir movimiento en stdout")
+        } else {
+            cut = true; // si no hay movimientos válidos, salir del bucle
+        }
 
         // libera semáforos
         sem_wait(&sync->reader_count_mutex);
@@ -167,14 +146,22 @@ int main(int argc, char *argv[]) {
         }
         sem_post(&sync->reader_count_mutex);
 
+        if(cut){
+            // si no hay movimientos válidos, salir del bucle
+            break;
+        }
+
         // TODO:espera respuesta del master por el pipe
-        
-        sleep(1);
+
+        usleep(30000); // 20ms de espera para no saturar el CPU
     }
 
     // Limpieza
-    munmap(game_state, sizeof(game_t));
-    munmap(sync, sizeof(game_sync));
-
+    if (game_state != MAP_FAILED) {
+        munmap(game_state, sizeof(game_t));
+    }
+    if (sync != MAP_FAILED) {
+        munmap(sync, sizeof(game_sync));
+    }
     return EXIT_SUCCESS;
 }

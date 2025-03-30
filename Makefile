@@ -1,4 +1,4 @@
-GCCFLAGS = -Werror -Wall -D_POSIX_C_SOURCE=200809L
+GCCFLAGS = -Werror -Wall
 CC = gcc 
 LDFLAGS = -lrt -pthread
 
@@ -13,9 +13,6 @@ master: master.o shm_utils.o
 player_first_possible: player.o shm_utils.o
 	$(CC) -o player_first_possible player.o shm_utils.o $(LDFLAGS)
 
-player_sparse: player_sparse.o shm_utils.o
-	$(CC) -o player_sparse player_sparse.o shm_utils.o $(LDFLAGS)
-
 player_best_score: player_best_score.o shm_utils.o
 	$(CC) -o player_best_score player_best_score.o shm_utils.o $(LDFLAGS)
 
@@ -25,8 +22,11 @@ player_best_score.o: player.c shared_memory.h constants.h shm_utils.h
 player.o: player.c shared_memory.h constants.h shm_utils.h
 	$(CC) $(GCCFLAGS) -DFIRST_POSSIBLE -c player.c -o player.o
 
-player_sparse.o: player.c shared_memory.h constants.h shm_utils.h
-	$(CC) $(GCCFLAGS) -DSPARSE -c player.c -o player_sparse.o
+player_random: player_random.o shm_utils.o
+	$(CC) -o player_random player_random.o shm_utils.o $(LDFLAGS)
+
+player_random.o: player.c shared_memory.h constants.h shm_utils.h
+	$(CC) $(GCCFLAGS) -DBEST_SCORE -c player.c -o player_random.o
 
 view: view.o shm_utils.o
 	$(CC) -o view view.o shm_utils.o $(LDFLAGS)

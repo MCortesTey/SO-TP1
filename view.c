@@ -140,7 +140,7 @@ int main(int argc, char *argv[] ){
     while (!game_state->has_finished) {
         // Esperar señal del master indicando que hay cambios para imprimir
         sem_wait(&sync->print_needed);
-
+        
         // Imprimir el estado actual del tablero
         print_board(game_state);
 
