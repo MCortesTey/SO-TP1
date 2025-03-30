@@ -54,3 +54,7 @@ dkms.conf
 *.sh
 /.vscode
 .bash_history
+player_sparse
+player_first_possible
+view
+.lesshst

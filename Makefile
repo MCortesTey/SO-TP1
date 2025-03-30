@@ -5,13 +5,22 @@ LDFLAGS = -lrt -pthread
 # Object files
 OBJS = master.o player.o view.o shm_utils.o
 
-all: master player view
+all: master player_first_possible player_sparse view
 
 master: master.o shm_utils.o
 	$(CC) -o master master.o shm_utils.o $(LDFLAGS)
 
-player: player.o shm_utils.o
-	$(CC) -o player player.o shm_utils.o $(LDFLAGS)
+player_first_possible: player.o shm_utils.o
+	$(CC) -o player_first_possible player.o shm_utils.o $(LDFLAGS)
+
+player_sparse: player_sparse.o shm_utils.o
+	$(CC) -o player_sparse player_sparse.o shm_utils.o $(LDFLAGS)
+
+player.o: player.c shared_memory.h constants.h shm_utils.h
+	$(CC) $(GCCFLAGS) -DFIRST_POSSIBLE -c player.c -o player.o
+
+player_sparse.o: player.c shared_memory.h constants.h shm_utils.h
+	$(CC) $(GCCFLAGS) -DSPARSE -c player.c -o player_sparse.o
 
 view: view.o shm_utils.o
 	$(CC) -o view view.o shm_utils.o $(LDFLAGS)
@@ -20,4 +29,4 @@ view: view.o shm_utils.o
 	$(CC) $(GCCFLAGS) -c $<
 
 clean:
-	rm -f *.o master player view
+	rm -f *.o master player_first_possible player_sparse view
