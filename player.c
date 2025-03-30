@@ -80,6 +80,26 @@ char generate_move(int width, int height, int board[][height], int x_pos, int y_
 
 #endif
 
+#ifdef BEST_SCORE
+char generate_move(int width, int height, int board[][height], int x_pos, int y_pos){
+    int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
+    int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
+    int best_move = NONE;
+    int max_score = -1;
+
+    for (int i = UP; i <= UP_LEFT; i++) {
+        int x = x_pos + dx[i], y = y_pos + dy[i];
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+            if (board[x][y] > max_score) {
+                max_score = board[x][y];
+                best_move = i;
+            }
+        }
+    }
+    return best_move;
+}
+#endif
+
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         fprintf(stderr, "Uso: %s <ancho> <alto>\n", argv[0]);

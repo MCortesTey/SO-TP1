@@ -16,6 +16,12 @@ player_first_possible: player.o shm_utils.o
 player_sparse: player_sparse.o shm_utils.o
 	$(CC) -o player_sparse player_sparse.o shm_utils.o $(LDFLAGS)
 
+player_best_score: player_best_score.o shm_utils.o
+	$(CC) -o player_best_score player_best_score.o shm_utils.o $(LDFLAGS)
+
+player_best_score.o: player.c shared_memory.h constants.h shm_utils.h
+	$(CC) $(GCCFLAGS) -DBEST_SCORE -c player.c -o player_best_score.o
+
 player.o: player.c shared_memory.h constants.h shm_utils.h
 	$(CC) $(GCCFLAGS) -DFIRST_POSSIBLE -c player.c -o player.o
 
