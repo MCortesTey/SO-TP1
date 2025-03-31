@@ -27,6 +27,7 @@
 #define COLOR_BLUE    "\x1b[44m"        // Fondo azul
 #define COLOR_MAGENTA "\x1b[45m"        // Fondo magenta
 #define COLOR_CYAN    "\x1b[46m"        // Fondo cyan
+#define COLOR_BROWN   "\x1b[48;5;130m"  // Fondo marrón
 #define COLOR_WHITE   "\x1b[47m"        // Fondo blanco
 #define COLOR_PURPLE  "\x1b[105m"       // Fondo púrpura brillante
 #define COLOR_ORANGE  "\x1b[48;5;208m"  // Fondo naranja
@@ -42,7 +43,7 @@ const char* player_colors[] = {
     COLOR_BLUE,
     COLOR_MAGENTA,
     COLOR_CYAN,
-    COLOR_WHITE,
+    COLOR_BROWN,
     COLOR_PURPLE,
     COLOR_ORANGE,
     COLOR_RED,   
@@ -56,6 +57,7 @@ const char* player_colors[] = {
 #define TEXT_BLUE    "\x1b[34m"
 #define TEXT_MAGENTA "\x1b[35m"
 #define TEXT_CYAN    "\x1b[36m"
+#define TEXT_BROWN   "\x1b[38;5;130m"
 #define TEXT_WHITE   "\x1b[37m"
 #define TEXT_PURPLE  "\x1b[95m"
 #define TEXT_ORANGE  "\x1b[38;5;208m"
@@ -68,7 +70,7 @@ const char* text_colors[] = {
     TEXT_BLUE,
     TEXT_MAGENTA,
     TEXT_CYAN,
-    TEXT_WHITE,
+    TEXT_BROWN,
     TEXT_PURPLE,
     TEXT_ORANGE
 };
