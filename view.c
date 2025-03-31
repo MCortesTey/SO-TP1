@@ -32,6 +32,17 @@
 #define COLOR_PURPLE  "\x1b[105m"       // Fondo púrpura brillante
 #define COLOR_ORANGE  "\x1b[48;5;208m"  // Fondo naranja
 
+// Colores de fondo brillantes para las cabezas de los jugadores
+#define BRIGHT_RED     "\x1b[101m"   // Fondo rojo brillante
+#define BRIGHT_GREEN   "\x1b[102m"   // Fondo verde brillante
+#define BRIGHT_YELLOW  "\x1b[103m"   // Fondo amarillo brillante
+#define BRIGHT_BLUE    "\x1b[104m"   // Fondo azul brillante
+#define BRIGHT_MAGENTA "\x1b[105m"   // Fondo magenta brillante
+#define BRIGHT_CYAN    "\x1b[106m"   // Fondo cyan brillante
+#define BRIGHT_BROWN   "\x1b[48;5;173m"  // Fondo marrón brillante
+#define BRIGHT_PURPLE  "\x1b[48;5;213m"  // Fondo púrpura más brillante
+#define BRIGHT_ORANGE  "\x1b[48;5;214m"  // Fondo naranja brillante
+
 // Color para los números (texto negro sobre fondo blanco)
 #define SCORE_COLOR   "\x1b[30;47m"  // Texto negro sobre fondo blanco
 
@@ -48,6 +59,19 @@ const char* player_colors[] = {
     COLOR_ORANGE,
     COLOR_RED,   
     COLOR_GREEN
+};
+
+// Array de colores brillantes para las cabezas de los jugadores
+const char* bright_player_colors[] = {
+    BRIGHT_RED,
+    BRIGHT_GREEN,
+    BRIGHT_YELLOW,
+    BRIGHT_BLUE,
+    BRIGHT_MAGENTA,
+    BRIGHT_CYAN,
+    BRIGHT_BROWN,
+    BRIGHT_PURPLE,
+    BRIGHT_ORANGE
 };
 
 // Colores de texto para la información de jugadores
@@ -79,7 +103,6 @@ const char* text_colors[] = {
 void print_board(game_t *game_state) {
     CLEAR_SCREEN;
     
-    
     // Imprimir borde superior
     printf("┌");
     for(int x = 0; x < game_state->board_width * 3; x++) {
@@ -97,7 +120,14 @@ void print_board(game_t *game_state) {
                 printf("%s%2d %s", SCORE_COLOR, cell, COLOR_RESET);
             } else {
                 // Jugador - bloque de color sólido
-                printf("%s   %s", player_colors[-cell], COLOR_RESET);
+                int player_idx = -cell; 
+                int is_head = 0;//Me fijo si es cabeza
+                
+                if(player_idx >= 0 && player_idx < game_state->player_number) {
+                    player_t player = game_state->players[player_idx];
+                    is_head = (x == player.x_coord && y == player.y_coord);
+                }
+                printf("%s   %s", is_head ? bright_player_colors[player_idx] : player_colors[player_idx], COLOR_RESET);
             }
         }
         printf("│\n");  // Borde derecho
