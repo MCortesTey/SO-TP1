@@ -135,6 +135,8 @@ int main(int argc, char *argv[]) {
     IF_EXIT(player_id == game_state->player_number, "player could not identify itself")
     bool cut = false;
     while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
+        sem_wait(&sync->master_access_mutex); // bloquea el acceso al estado del juego
+        sem_post(&sync->master_access_mutex); // libera el acceso al estado del juego
 
         // lee estado de juego
         sem_wait(&sync->reader_count_mutex); // bloquea el reader count
@@ -158,14 +160,6 @@ int main(int argc, char *argv[]) {
         }
 
         // TODO: genera movimiento
-        unsigned char move = generate_move(game_state->board_width,game_state->board_height,game_state->board_p,game_state->players[player_id].x_coord,game_state->players[player_id].y_coord);
-        cut = move == NONE;
-        // Si el movimiento generado no es NONE, escribirlo en stdout
-        if(!cut){
-            IF_EXIT(putchar(move) == EOF, "Error al escribir movimiento en stdout")
-            fflush(stdout);
-            mov_count++;
-        }
 
         // libera semáforos
         sem_wait(&sync->reader_count_mutex);
@@ -175,12 +169,17 @@ int main(int argc, char *argv[]) {
         }
         sem_post(&sync->reader_count_mutex);
 
-        
-        if(cut){
-            // si no hay movimientos válidos, salir del bucle
+        unsigned char move = generate_move(game_state->board_width,game_state->board_height,game_state->board_p,game_state->players[player_id].x_coord,game_state->players[player_id].y_coord);
+        cut = (move == NONE);
+        // Si el movimiento generado no es NONE, escribirlo en stdout
+        if(!cut){
+            IF_EXIT(putchar(move) == EOF, "Error al escribir movimiento en stdout")
+            fflush(stdout);
+            mov_count++;
+        } else {
             break;
         }
-        while(!cut && !game_state->has_finished && !game_state->players[player_id].is_blocked && game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
+        while(!game_state->has_finished && !game_state->players[player_id].is_blocked && game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
         usleep(20000);
     }
     // Limpieza
