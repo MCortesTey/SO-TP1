@@ -107,6 +107,8 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    size_t mov_count = 0;
+
     int width = atoi(argv[1]);
     IF_EXIT(width <= 0, "ancho inválido")
 
@@ -161,6 +163,7 @@ int main(int argc, char *argv[]) {
         // Si el movimiento generado no es NONE, escribirlo en stdout
         if(move != NONE){
             IF_EXIT(write(STDOUT_FILENO, &move, sizeof(unsigned char)) == -1, "Error al escribir movimiento en stdout")
+            mov_count++;
         } else {
             // Si no hay movimientos válidos, marcar la bandera para salir del bucle
             cut = true;
@@ -180,8 +183,7 @@ int main(int argc, char *argv[]) {
             // si no hay movimientos válidos, salir del bucle
             break;
         }
-
-        usleep(20000); 
+        while(game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
     }
     // Limpieza
     if (game_state != MAP_FAILED) {
