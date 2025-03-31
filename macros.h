@@ -9,5 +9,7 @@
 
 #define IF_EXIT(condition,name) if((condition)) { perror(name); exit(EXIT_FAILURE); }
 #define IS_NULL(ptr) ((ptr) == NULL)
+#define IF_EXIT_NON_ZERO(value,name) IF_EXIT((value) != 0, name)
+#define IF_EXIT_NULL(ptr,name) IF_EXIT(IS_NULL(ptr), name)
 
 #endif // MACROS_H

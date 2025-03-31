@@ -36,12 +36,12 @@ enum pipeEnds{READ_END, WRITE_END};
 
 
 void init_shared_sem(sem_t * sem, int initial_value){
-    IF_EXIT(sem_init(sem,1,initial_value) == -1,"sem_init")
+    IF_EXIT_NON_ZERO(sem_init(sem,1,initial_value),"sem_init")
 }
 
 game_sync * createGameSync(){
     game_sync * game_sync_ptr = create_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP); // 0666
-    IF_EXIT(IS_NULL(game_sync_ptr),"Could not create game_sync")
+    IF_EXIT_NULL(game_sync_ptr,"Could not create game_sync")
 
     // setear semáforos iniciales
     init_shared_sem(&game_sync_ptr->print_needed,0);
@@ -56,9 +56,9 @@ game_sync * createGameSync(){
 
 
 
-game_t * createGame(int width, int height, int n_players){
+game_t * createGame(int width, int height, int n_players, char * players[]){
     game_t * game_t_ptr = create_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP); // 0644
-    IF_EXIT(IS_NULL(game_t_ptr),"Could not create game_state")
+    IF_EXIT_NULL(game_t_ptr,"Could not create game_state")
 
     game_t_ptr->board_width = width;
     game_t_ptr->board_height = height;
@@ -66,8 +66,8 @@ game_t * createGame(int width, int height, int n_players){
     game_t_ptr->has_finished = false;
 
     // Inicializar el array de jugadores
-    for(int i = 0; i < MAX_PLAYERS; i++) {
-        game_t_ptr->players[i].name[0] = '\0';
+    for(int i = 0; i < n_players; i++) {
+        strncpy(game_t_ptr->players[i].name, players[i], MAX_NAME_LEN);
         game_t_ptr->players[i].score = 0;
         game_t_ptr->players[i].invalid_mov_requests = 0;
         game_t_ptr->players[i].valid_mov_request = 0;
@@ -76,6 +76,8 @@ game_t * createGame(int width, int height, int n_players){
         game_t_ptr->players[i].pid = 0;
         game_t_ptr->players[i].is_blocked = false;
     }
+
+
 
     return game_t_ptr;
 }
@@ -89,7 +91,7 @@ int main(int argc, char const *argv[]){
     int width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, delay = DEFAULT_DELAY, timeout = DEFAULT_TIMEOUT, seed = DEFAULT_SEED;
     char * view_path = DEFAULT_VIEW;
     int player_count = 0;
-    char players[MAX_PLAYERS][MAX_NAME_LEN];
+    char *players[MAX_PLAYERS];
     int c;
     while((c = getopt (argc, (char * const*)argv, "w:h:d:t:s:v:p:")) != -1){
         switch(c){
@@ -125,7 +127,7 @@ int main(int argc, char const *argv[]){
                     fprintf(stderr, "Error: Player name too long (max %d characters).\n", MAX_NAME_LEN);
                     exit(EXIT_FAILURE);
                 }
-                strncpy(players[player_count++],optarg,MAX_NAME_LEN); // TODO REVISAR ESTO... PONELE QUE ES PROG DEFENSIVA
+                players[player_count++] = strdup(optarg); 
                 
                 // Agarramos los jugadores que vienen después
                 while (optind < argc && argv[optind][0] != '-') {
@@ -134,12 +136,13 @@ int main(int argc, char const *argv[]){
                         exit(EXIT_FAILURE);
                     }
                     
-                    if (strlen(argv[optind]) > MAX_NAME_LEN) {
-                        fprintf(stderr, "Error: Player name too long (max %d characters).\n", MAX_NAME_LEN);
-                        exit(EXIT_FAILURE);
-                    }
+                    // creo que esto no tiene sentido porque después el nombre se trunca.
 
-                    strncpy(players[player_count++],argv[optind++],MAX_NAME_LEN); // TODO REVISAR ESTO...
+                    // if (strlen(argv[optind]) > MAX_NAME_LEN) {
+                    //     fprintf(stderr, "Error: Player name too long (max %d characters).\n", MAX_NAME_LEN);
+                    //     exit(EXIT_FAILURE);
+                    // }
+                    players[player_count++] = strdup(argv[optind++]);
                 }
                 
                 if (player_count < MIN_PLAYER_NUMBER) {
@@ -164,7 +167,7 @@ int main(int argc, char const *argv[]){
     IF_EXIT(player_count < MIN_PLAYER_NUMBER,"Error: At least one player must be specified using -p.")
     IF_EXIT(player_count > MAX_PLAYER_NUMBER, "Error: max players = 9") // adaptar a lo que sea...
 
-    game_t * game = createGame(width, height, player_count);
+    game_t * game = createGame(width, height, player_count, players);
     game_sync* sync = createGameSync();
 
     char board_dimensions[2][256];
@@ -178,12 +181,12 @@ int main(int argc, char const *argv[]){
 
     // Crear pipes para jugadores
     for(int i = 0; i < player_count; i++){
-        IF_EXIT(pipe(pipes[i]) == -1, "pipe")
+        IF_EXIT_NON_ZERO(pipe(pipes[i]), "pipe")
     }
 
     // Crear pipe para view si existe
     if(view_path != NULL){
-        IF_EXIT(pipe(pipes[player_count]) == -1, "pipe view")
+        IF_EXIT_NON_ZERO(pipe(pipes[player_count]), "pipe view")
     }
 
     for(int i=0; i < player_count; i++){
@@ -194,7 +197,7 @@ int main(int argc, char const *argv[]){
             // dup pipe
             // cierro pipe que dupliqué
             // cierro los otros pipes porque no me sirven
-            IF_EXIT(dup2(pipes[i][WRITE_END],STDOUT_FILENO) != 0,"dup2")
+            IF_EXIT_NON_ZERO(dup2(pipes[i][WRITE_END],STDOUT_FILENO),"dup2")
 
 
             // PENSAR SI QUIZÁS NO CONVIENE CERRAR SOLAMENTE PARA j!=i
@@ -208,7 +211,7 @@ int main(int argc, char const *argv[]){
             IF_EXIT(true,"execv player") // no debería llegar acá.
         } else if(pid > 0){ // PADRE
             // close unused pipes
-            IF_EXIT(close(pipes[i][WRITE_END]) != 0,"close")
+            IF_EXIT_NON_ZERO(close(pipes[i][WRITE_END]),"close")
 
             game->players[i].pid = pid;
         }
@@ -220,12 +223,12 @@ int main(int argc, char const *argv[]){
         IF_EXIT(pid < 0, "fork view")
         if(pid == 0){ 
             // Redirigir stdout al pipe del view
-            IF_EXIT(dup2(pipes[player_count][WRITE_END], STDOUT_FILENO) != 0, "dup2")
+            IF_EXIT_NON_ZERO(dup2(pipes[player_count][WRITE_END], STDOUT_FILENO), "dup2")
 
             // Cerrar todos los pipes que no se usan
             for(int j = 0; j < player_count + 1; j++){ 
-                IF_EXIT(close(pipes[j][READ_END]) != 0, "close")
-                IF_EXIT(close(pipes[j][WRITE_END]) != 0, "close")
+                IF_EXIT_NON_ZERO(close(pipes[j][READ_END]), "close")
+                IF_EXIT_NON_ZERO(close(pipes[j][WRITE_END]), "close")
             }
 
             char *view_args[] = {view_path, board_dimensions[0], board_dimensions[1], NULL};
@@ -253,11 +256,19 @@ int main(int argc, char const *argv[]){
 
     }
 
-    IF_EXIT(munmap(game,sizeof(game_t) + sizeof(int)*(width*height)) == -1, "munmap game")
-    IF_EXIT(munmap(sync,sizeof(game_sync)) == -1, "munmap game")
+    IF_EXIT_NON_ZERO(munmap(game,sizeof(game_t) + sizeof(int)*(width*height)), "munmap game")
+    IF_EXIT_NON_ZERO(munmap(sync,sizeof(game_sync)), "munmap game")
 
-    IF_EXIT(shm_unlink(SHM_GAME_PATH) == -1, "shm_unlink game")
-    IF_EXIT(shm_unlink(SHM_GAME_SEMS_PATH) == -1, "shm_unlink sync")
+    IF_EXIT_NON_ZERO(shm_unlink(SHM_GAME_PATH), "shm_unlink game")
+    IF_EXIT_NON_ZERO(shm_unlink(SHM_GAME_SEMS_PATH), "shm_unlink sync")
+
+    // libera espacio de los nombres y pipes
+    for(int i = 0; i < player_count; i++){
+        free(players[i]);
+        IF_EXIT_NON_ZERO(close(pipes[i][READ_END]),"close")
+        IF_EXIT_NON_ZERO(close(pipes[i][WRITE_END]),"close")
+    }
+
 
     return 0;
 }
