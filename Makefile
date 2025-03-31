@@ -7,7 +7,7 @@ OBJS = master.o player.o view.o shm_utils.o
 
 all: master player_first_possible player_sparse view
 
-all_players: player_first_possible player_best_score player_random
+all_players: player_first_possible player_best_score player_random player_clock
 
 master: master.o shm_utils.o
 	$(CC) -o master master.o shm_utils.o $(LDFLAGS)
@@ -30,6 +30,12 @@ player_random: player_random.o shm_utils.o
 player_random.o: player.c shared_memory.h constants.h shm_utils.h
 	$(CC) $(GCCFLAGS) -DRANDOM -c player.c -o player_random.o
 
+player_clock: player_clock.o shm_utils.o
+	$(CC) -o player_clock player_clock.o shm_utils.o $(LDFLAGS)
+
+player_clock.o: player.c shared_memory.h constants.h shm_utils.h
+	$(CC) $(GCCFLAGS) -DCLOCK -c player.c -o player_clock.o
+
 view: view.o shm_utils.o
 	$(CC) -o view view.o shm_utils.o $(LDFLAGS)
 
@@ -37,4 +43,4 @@ view: view.o shm_utils.o
 	$(CC) $(GCCFLAGS) -c $<
 
 clean:
-	rm -f *.o master player_first_possible player_random player_best_score view
+	rm -f *.o master player_first_possible player_random player_best_score player_clock view

@@ -77,6 +77,32 @@ unsigned char generate_move(int width, int height, int board[], int x_pos, int y
 }
 #endif
 
+#ifdef CLOCK
+unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){
+    int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
+    int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
+    int i = UP;
+    int original_i = i;
+    int x, y;
+    
+    do {
+        i = i % 8;  // Mantener i entre 0 y 7
+        x = x_pos + dx[i];
+        y = y_pos + dy[i];
+        
+        if (x >= 0 && x < width && y >= 0 && y < height && board[y * width + x] > 0) {
+            int move = i;
+            i = (i + 1) % 8;  // Preparar para la siguiente llamada
+            return move;
+        }
+        
+        i++;
+    } while (i != original_i);  // Continuar hasta que hayamos verificado todas las direcciones
+    
+    return NONE;  // Solo si no encontramos ningún movimiento válido
+}
+#endif
+
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         fprintf(stderr, "Uso: %s <ancho> <alto>\n", argv[0]);
@@ -154,10 +180,10 @@ int main(int argc, char *argv[]) {
         if(cut){
             // si no hay movimientos válidos, salir del bucle
             break;
+        }
 
         usleep(20000); 
     }
-
     // Limpieza
     if (game_state != MAP_FAILED) {
         munmap(game_state, sizeof(game_t));
@@ -166,4 +192,5 @@ int main(int argc, char *argv[]) {
         munmap(sync, sizeof(game_sync));
     }
     return EXIT_SUCCESS;
+    
 }
