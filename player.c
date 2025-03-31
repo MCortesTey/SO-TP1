@@ -20,11 +20,12 @@ enum MOVEMENTS {UP = 0, UP_RIGHT, RIGHT, DOWN_RIGHT, DOWN, DOWN_LEFT, LEFT, UP_L
 
 unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos);
 
+const int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
+const int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
+
 #ifdef FIRST_POSSIBLE
 
 unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){ 
-    int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
-    int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
     for(int i = UP; i <= UP_LEFT; i++){
         int x = x_pos + dx[i];
         int y = y_pos + dy[i];
@@ -38,8 +39,6 @@ unsigned char generate_move(int width, int height, int board[], int x_pos, int y
 
 #ifdef BEST_SCORE
 unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){
-    int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
-    int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
     int best_move = NONE;
     int max_score = -1;
 
@@ -58,8 +57,6 @@ unsigned char generate_move(int width, int height, int board[], int x_pos, int y
 
 #ifdef RANDOM
 unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){
-    int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
-    int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
     int valid_moves[8];
     int num_valid_moves = 0;
 
@@ -79,8 +76,6 @@ unsigned char generate_move(int width, int height, int board[], int x_pos, int y
 
 #ifdef CLOCK
 unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){
-    int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
-    int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
     int i = UP;
     int original_i = i;
     int x, y;
