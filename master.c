@@ -218,7 +218,7 @@ int main(int argc, char const *argv[]){
         }
     }
 
-    //int view_pid;
+    pid_t view_pid;
     if(view_path != NULL){
         pid_t pid = fork();
         IF_EXIT(pid < 0, "fork view")
@@ -237,7 +237,7 @@ int main(int argc, char const *argv[]){
             IF_EXIT(true,"execv view")
             exit(EXIT_FAILURE);
         } else if(pid > 0){
-            //view_pid = pid;
+            view_pid = pid;
         }
     }
     
