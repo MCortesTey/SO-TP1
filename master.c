@@ -82,44 +82,50 @@ game_t * createGame(int width, int height, int n_players, char * players[]){
     return game_t_ptr;
 }
 
-int main(int argc, char const *argv[]){
+void parse_arguments(int argc, char const *argv[], int *width, int *height, int *delay, int *timeout, int *seed, char **view_path, char **players, int *player_count) {
     // PONELE
     extern char *optarg; // Declare optarg for getopt
     extern int optind, opterr, optopt; // Declare getopt-related variables
     // END PONELE
+    
+    // Inicializar los valores por defecto
+    *width = DEFAULT_WIDTH;
+    *height = DEFAULT_HEIGHT;
+    *delay = DEFAULT_DELAY;
+    *timeout = DEFAULT_TIMEOUT;
+    *seed = DEFAULT_SEED;
+    *view_path = DEFAULT_VIEW;
+    *player_count = 0;
 
-    int width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, delay = DEFAULT_DELAY, timeout = DEFAULT_TIMEOUT, seed = DEFAULT_SEED;
-    char * view_path = DEFAULT_VIEW;
-    int player_count = 0;
-    char *players[MAX_PLAYERS];
+    // Procesar argumentos
     int c;
     while((c = getopt (argc, (char * const*)argv, "w:h:d:t:s:v:p:")) != -1){
         switch(c){
             case 'w':
-                width = atoi(optarg);
-                IF_EXIT(width == 0, "atoi width")
-                IF_EXIT(width < DEFAULT_WIDTH, "width menor que la mínima")
+                *width = atoi(optarg);
+                IF_EXIT(*width == 0, "atoi width")
+                IF_EXIT(*width < DEFAULT_WIDTH, "width menor que la mínima")
                 break;
             case 'h':
-                height = atoi(optarg);
-                IF_EXIT(height == 0, "atoi height")
-                IF_EXIT(height < DEFAULT_HEIGHT, "height menor que la mínima")
+                *height = atoi(optarg);
+                IF_EXIT(*height == 0, "atoi height")
+                IF_EXIT(*height < DEFAULT_HEIGHT, "height menor que la mínima")
                 break;
             case 'd':
-                delay = atoi(optarg);
-                IF_EXIT(delay == 0, "atoi delay")
-                IF_EXIT(delay < 0, "delay menor que cero")
+                *delay = atoi(optarg);
+                IF_EXIT(*delay == 0, "atoi delay")
+                IF_EXIT(*delay < 0, "delay menor que cero")
                 break;
             case 't':
-                timeout = atoi(optarg);
-                IF_EXIT(timeout == 0, "atoi timeout")
-                IF_EXIT(timeout < 0, "timeout menor que cero")
+                *timeout = atoi(optarg);
+                IF_EXIT(*timeout == 0, "atoi timeout")
+                IF_EXIT(*timeout < 0, "timeout menor que cero")
                 break;
             case 's':
-                seed = atoi(optarg);
+                *seed = atoi(optarg);
                 break;
             case 'v':
-                view_path = optarg;
+                *view_path = optarg;
                 break;
             case 'p':
                 // Guardamos el primer jugador que viene en optarg
@@ -128,25 +134,19 @@ int main(int argc, char const *argv[]){
                     exit(EXIT_FAILURE);
                 }
                 
-                players[player_count++] = strdup(optarg); 
+                players[*player_count++] = strdup(optarg); 
                 
                 // Agarramos los jugadores que vienen después
                 while (optind < argc && argv[optind][0] != '-') {
-                    if (player_count >= MAX_PLAYERS) {
+                    if (*player_count >= MAX_PLAYERS) {
                         fprintf(stderr, "Error: Se alcanzó el límite de jugadores (%d).\n", MAX_PLAYERS);
                         exit(EXIT_FAILURE);
                     }
                     
-                    // creo que esto no tiene sentido porque después el nombre se trunca.
-
-                    // if (strlen(argv[optind]) > MAX_NAME_LEN) {
-                    //     fprintf(stderr, "Error: Player name too long (max %d characters).\n", MAX_NAME_LEN);
-                    //     exit(EXIT_FAILURE);
-                    // }
-                    players[player_count++] = strdup(argv[optind++]);
+                    players[*player_count++] = strdup(argv[optind++]);
                 }
                 
-                if (player_count < MIN_PLAYER_NUMBER) {
+                if (*player_count < MIN_PLAYER_NUMBER) {
                     fprintf(stderr, "Error: Se requiere al menos un jugador.\n");
                     exit(EXIT_FAILURE);
                 }
@@ -163,6 +163,15 @@ int main(int argc, char const *argv[]){
                 exit(EXIT_FAILURE);
         }
     }
+}
+
+int main(int argc, char const *argv[]){
+    int width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, delay = DEFAULT_DELAY, timeout = DEFAULT_TIMEOUT, seed = DEFAULT_SEED;
+    char * view_path = DEFAULT_VIEW;
+    int player_count = 0;
+    char *players[MAX_PLAYERS];
+
+    process_arguments(argc, argv, &width, &height, &delay, &timeout, &seed, &view_path, players, &player_count);
     
 
     IF_EXIT(player_count < MIN_PLAYER_NUMBER,"Error: At least one player must be specified using -p.")
