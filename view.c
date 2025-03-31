@@ -115,7 +115,7 @@ void print_board(game_t *game_state) {
     for(unsigned int i = 0; i < game_state->player_number; i++) {
         player_t player = game_state->players[i];
         if(player.pid != 0) {  // Si el jugador está activo
-            printf("%sJugador %d%s (%s): Score=%d, Pos=(%d,%d)%s\n", 
+            printf("%sJugador %d%s (%16s): Score=%d, Pos=(%d,%d)%s\n", 
                 text_colors[i],
                 i + 1, 
                 COLOR_RESET,

@@ -183,9 +183,8 @@ int main(int argc, char *argv[]) {
             // si no hay movimientos válidos, salir del bucle
             break;
         }
-        // no hay otra manera para que el player sepa que el master leyó su movimiento.
-        // cuando se igualan los contadores el player puede seguir, sino manda lo mismo por el pipe y se cuelga.
-        while(game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count); 
+        while(!game_state->has_finished && !game_state->players[player_id].is_blocked && game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
+        usleep(2000);
     }
     // Limpieza
     if (game_state != MAP_FAILED) {
