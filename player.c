@@ -162,7 +162,8 @@ int main(int argc, char *argv[]) {
         cut = move == NONE;
         // Si el movimiento generado no es NONE, escribirlo en stdout
         if(!cut){
-            IF_EXIT(write(STDOUT_FILENO, &move, sizeof(unsigned char)) == -1, "Error al escribir movimiento en stdout")
+            IF_EXIT(putchar(move) == EOF, "Error al escribir movimiento en stdout")
+            fflush(stdout);
             mov_count++;
         }
 
@@ -180,7 +181,7 @@ int main(int argc, char *argv[]) {
             break;
         }
         while(!cut && !game_state->has_finished && !game_state->players[player_id].is_blocked && game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
-        //usleep(2000);
+        usleep(20000);
     }
     // Limpieza
     if (game_state != MAP_FAILED) {
