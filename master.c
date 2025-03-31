@@ -127,6 +127,7 @@ int main(int argc, char const *argv[]){
                     fprintf(stderr, "Error: Player name too long (max %d characters).\n", MAX_NAME_LEN);
                     exit(EXIT_FAILURE);
                 }
+                
                 players[player_count++] = strdup(optarg); 
                 
                 // Agarramos los jugadores que vienen después

@@ -133,11 +133,11 @@ int main(int argc, char *argv[] ){
         exit(EXIT_FAILURE);
     }
 
-    //int width = atoi(argv[1]);
-    //int height = atoi(argv[2]); 
+    int width = atoi(argv[1]);
+    int height = atoi(argv[2]); 
 
     game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), O_RDWR);
-    game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t), O_RDONLY);
+    game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), O_RDONLY);
 
     // Loop principal de la vista
     while (!game_state->has_finished) {

@@ -12,7 +12,7 @@ OBJS = master.o player.o view.o shm_utils.o
 PVS_ANALYZER = pvs-studio-analyzer
 PVS_REPORT = plog-converter
 
-all: master all_players view
+all:  all_players view
 
 all_players: player_first_possible player_best_score player_random player_clock
 
@@ -55,6 +55,7 @@ clean:
 # Comandos para análisis
 analyze: clean
 	$(PVS_ANALYZER) trace -- make all
+	$(PVS_ANALYZER) analyze -o PVS-Studio.log
 	$(PVS_REPORT) -a GA:1,2 -t tasklist -o PVS-Studio.log PVS-Studio.log
 
 # Limpieza de archivos generados por PVS-Studio

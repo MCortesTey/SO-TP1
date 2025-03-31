@@ -23,8 +23,8 @@ enum MOVEMENTS {UP = 0, UP_RIGHT, RIGHT, DOWN_RIGHT, DOWN, DOWN_LEFT, LEFT, UP_L
 
 unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos);
 
-const int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
-const int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
+const int dx[] = {0,   1, 1, 1, 0, -1, -1, -1};
+const int dy[] = {-1, -1, 0, 1, 1,  1,   0, -1};
 
 #ifdef FIRST_POSSIBLE
 
@@ -106,7 +106,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Uso: %s <ancho> <alto>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-    srand(getpid()); // provisorio, después ver como tunearlo para que sea más random aún
 
     int width = atoi(argv[1]);
     IF_EXIT(width <= 0, "ancho inválido")
@@ -115,12 +114,14 @@ int main(int argc, char *argv[]) {
     IF_EXIT(height <= 0, "alto inválido")
 
     // Conectar a la memoria compartida del juego
-    game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t), O_RDONLY);
+    game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), O_RDONLY);
 
     // Conectar a la memoria compartida de sincronización
     game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), O_RDWR);
 
-    int player_id = -1; // el jugador va a identificarse a sí mismo!!
+    srand(getpid()); // provisorio, después ver como tunearlo para que sea más random aún
+
+    int player_id = 0; // el jugador va a identificarse a sí mismo!!
     pid_t my_pid = getpid();
 
     for (player_id = 0; player_id < game_state->player_number; player_id++){
@@ -159,7 +160,7 @@ int main(int argc, char *argv[]) {
         
         // Si el movimiento generado no es NONE, escribirlo en stdout
         if(move != NONE){
-            IF_EXIT(write(STDOUT_FILENO, &move, 1) == -1, "Error al escribir movimiento en stdout")
+            IF_EXIT(write(STDOUT_FILENO, &move, sizeof(unsigned char)) == -1, "Error al escribir movimiento en stdout")
         } else {
             // Si no hay movimientos válidos, marcar la bandera para salir del bucle
             cut = true;
