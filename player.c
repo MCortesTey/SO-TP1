@@ -159,16 +159,12 @@ int main(int argc, char *argv[]) {
 
         // TODO: genera movimiento
         unsigned char move = generate_move(game_state->board_width,game_state->board_height,game_state->board_p,game_state->players[player_id].x_coord,game_state->players[player_id].y_coord);
-        
+        cut = move == NONE;
         // Si el movimiento generado no es NONE, escribirlo en stdout
-        if(move != NONE){
+        if(!cut){
             IF_EXIT(write(STDOUT_FILENO, &move, sizeof(unsigned char)) == -1, "Error al escribir movimiento en stdout")
             mov_count++;
-        } else {
-            // Si no hay movimientos válidos, marcar la bandera para salir del bucle
-            cut = true;
         }
-        
 
         // libera semáforos
         sem_wait(&sync->reader_count_mutex);
@@ -183,8 +179,8 @@ int main(int argc, char *argv[]) {
             // si no hay movimientos válidos, salir del bucle
             break;
         }
-        while(!game_state->has_finished && !game_state->players[player_id].is_blocked && game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
-        usleep(2000);
+        while(!cut && !game_state->has_finished && !game_state->players[player_id].is_blocked && game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
+        //usleep(2000);
     }
     // Limpieza
     if (game_state != MAP_FAILED) {
