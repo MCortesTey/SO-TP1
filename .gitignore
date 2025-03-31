@@ -61,3 +61,9 @@ view
 player_best_score
 player_random
 player_clock
+
+
+# PVS Studio
+strace_out
+PVS-Studio.html
+*.log

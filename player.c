@@ -79,7 +79,7 @@ unsigned char generate_move(int width, int height, int board[], int x_pos, int y
 
 #ifdef CLOCK
 unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){
-    int i = UP;
+    static int i = UP;
     int original_i = i;
     int x, y;
     
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    IF_EXIT(player_id < 0, "player could not identify itself")
+    IF_EXIT(player_id == game_state->player_number, "player could not identify itself")
     bool cut = false;
     while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
 

@@ -8,7 +8,11 @@ LDFLAGS = -lrt -pthread
 # Object files
 OBJS = master.o player.o view.o shm_utils.o
 
-all: master player_first_possible player_sparse view
+# Agregar soporte para PVS-Studio
+PVS_ANALYZER = pvs-studio-analyzer
+PVS_REPORT = plog-converter
+
+all: master all_players view
 
 all_players: player_first_possible player_best_score player_random player_clock
 
@@ -46,4 +50,13 @@ view: view.o shm_utils.o
 	$(CC) $(GCCFLAGS) -c $<
 
 clean:
-	rm -f *.o master player_first_possible player_random player_best_score player_clock view
+	rm -rf *.o master player_first_possible player_random player_best_score player_clock view PVS-Studio.html *log strace_out
+
+# Comandos para análisis
+analyze: clean
+	$(PVS_ANALYZER) trace -- make all
+	$(PVS_REPORT) -a GA:1,2 -t tasklist -o PVS-Studio.log PVS-Studio.log
+
+# Limpieza de archivos generados por PVS-Studio
+clean-pvs:
+	rm -f PVS-Studio.log
