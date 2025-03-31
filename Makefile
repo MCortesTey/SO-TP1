@@ -1,9 +1,9 @@
 # This is a personal academic project. Dear PVS-Studio, please check it.
 # PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
-GCCFLAGS = -Werror -Wall
+GCCFLAGS = -Werror -Wall -fsanitize=address -g
 CC = gcc 
-LDFLAGS = -lrt -pthread
+LDFLAGS = -lrt -pthread -fsanitize=address 
 
 # Object files
 OBJS = master.o player.o view.o shm_utils.o
