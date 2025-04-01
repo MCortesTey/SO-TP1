@@ -158,7 +158,7 @@ void print_board(game_t *game_state) {
     fflush(stdout);
 }
 
-int main(int argc, char *argv[] ){
+int main(int argc, const char *argv[] ){
     if ( argc != 3 ) {
         fprintf(stderr, "Uso: %s <ancho> <alto>\n", argv[0]);
         exit(EXIT_FAILURE);

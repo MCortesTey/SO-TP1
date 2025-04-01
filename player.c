@@ -60,7 +60,7 @@ static inline unsigned char generate_move(int width, int height, const int board
 
 #ifdef RANDOM
 static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos){
-    int valid_moves[8];
+    int valid_moves[8] = {NONE};
     int num_valid_moves = 0;
 
     for (int i = UP; i <= UP_LEFT; i++) {
@@ -101,7 +101,7 @@ static inline unsigned char generate_move(int width, int height, const int board
 }
 #endif
 
-int main(int argc, char *argv[]) {
+int main(int argc, const char *argv[]) {
     if (argc != 3) {
         fprintf(stderr, "Uso: %s <ancho> <alto>\n", argv[0]);
         exit(EXIT_FAILURE);
@@ -138,7 +138,6 @@ int main(int argc, char *argv[]) {
     //bool cut = false;
 
     int my_board[width*height];
-    int my_x, my_y;
 
     unsigned char move = NONE;
     setvbuf(stdout, NULL, _IONBF, sizeof(move)); // Desactivar el buffering de stdout
@@ -157,7 +156,7 @@ int main(int argc, char *argv[]) {
         
         sem_post(&sync->reader_count_mutex);
 
-        memcpy(my_board, game_state->board_p, sizeof(int)*width*height);
+        memcpy(my_board, game_state->board_p, sizeof(my_board)); // copia el tablero
         my_x = game_state->players[player_id].x_coord;
         my_y = game_state->players[player_id].y_coord;
 
@@ -184,7 +183,7 @@ int main(int argc, char *argv[]) {
         //fflush(stdout);
          
         //while(!game_state->has_finished && !game_state->players[player_id].is_blocked && game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
-        usleep(2000000);
+        //usleep(2000000);
     }
     // Limpieza
     if (game_state != MAP_FAILED) {
@@ -193,6 +192,7 @@ int main(int argc, char *argv[]) {
     if (sync != MAP_FAILED) {
         munmap(sync, sizeof(game_sync));
     }
+
     return EXIT_SUCCESS;
     
 }
