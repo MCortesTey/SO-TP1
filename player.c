@@ -107,8 +107,6 @@ int main(int argc, const char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    
-
     size_t mov_count = 0;
 
     int width = atoi(argv[1]);
@@ -123,10 +121,10 @@ int main(int argc, const char *argv[]) {
     // Conectar a la memoria compartida de sincronización
     game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), O_RDWR);
 
-    srand(getpid()); // provisorio, después ver como tunearlo para que sea más random aún
-
     unsigned int player_id = 0; // el jugador va a identificarse a sí mismo!!
     pid_t my_pid = getpid();
+
+    srand(my_pid); // provisorio, después ver como tunearlo para que sea más random aún
 
     for (player_id = 0; player_id < game_state->player_number; player_id++){
         if(game_state->players[player_id].pid == my_pid){
