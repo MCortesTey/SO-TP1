@@ -128,35 +128,22 @@ void parse_arguments(int argc, char const *argv[], int *width, int *height, int 
                 *view_path = optarg;
                 break;
             case 'p':
-                // Guardamos el primer jugador que viene en optarg
-                if (strlen(optarg) > MAX_NAME_LEN) {
-                    fprintf(stderr, "Error: Player name too long (max %d characters).\n", MAX_NAME_LEN);
-                    exit(EXIT_FAILURE);
-                }
-                
-                players[*player_count++] = strdup(optarg); 
-                
-                // Agarramos los jugadores que vienen después
-                while (optind < argc && argv[optind][0] != '-') {
-                    if (*player_count >= MAX_PLAYERS) {
-                        fprintf(stderr, "Error: Se alcanzó el límite de jugadores (%d).\n", MAX_PLAYERS);
-                        exit(EXIT_FAILURE);
-                    }
-                    
-                    players[*player_count++] = strdup(argv[optind++]);
-                }
-                
-                if (*player_count < MIN_PLAYER_NUMBER) {
-                    fprintf(stderr, "Error: Se requiere al menos un jugador.\n");
-                    exit(EXIT_FAILURE);
+                // BORRAR ESTOS COMENTARIOS
+                // optind es el índice del siguiente argumento a procesar
+                // Si paso: ./master -p player1 
+                // optind = 3 , optarg = player1 y argc = 3
+                int index = optind - 1; // argv[index] = optarg
+
+                while(index < argc && argv[index][0] != '-') {
+                    IF_EXIT(strlen(argv[index]) > MAX_NAME_LEN, "Error: Player name too long")
+                    IF_EXIT(index - (optind - 1) >= MAX_PLAYER_NUMBER, "Error: Too many players")
+
+                    // Recuerde liberar el almacenamiento reservado con la llamada a strdup.
+                    players[(*player_count)++] = strdup(argv[index++]); // strdup reserva espacio de almacenamiento para una copia de serie llamando a malloc
                 }
                 break;
             case '?':
-                if (optopt == 'w' || optopt == 'l' || optopt == 'd' || optopt == 't'
-                    || optopt == 's' || optopt == 'v' || optopt == 'p')
-                    fprintf(stderr, "La opción -%c requiere un argumento.\n", optopt);
-                else
-                    fprintf(stderr, "Opción desconocida `-%c'.\n", optopt);
+                fprintf(stderr, "Usage: ./ChompChamps_arm64 [-w width] [-h height] [-d delay] [-s seed] [-v view] [-t timeout] -p player1 player2 ...\n");
                 exit(EXIT_FAILURE);
                 break;
             default:
