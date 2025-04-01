@@ -171,9 +171,8 @@ int main(int argc, char const *argv[]){
     int player_count = 0;
     char *players[MAX_PLAYERS];
 
-    process_arguments(argc, argv, &width, &height, &delay, &timeout, &seed, &view_path, players, &player_count);
+    parse_arguments(argc, argv, &width, &height, &delay, &timeout, &seed, &view_path, players, &player_count);
     
-
     IF_EXIT(player_count < MIN_PLAYER_NUMBER,"Error: At least one player must be specified using -p.")
     IF_EXIT(player_count > MAX_PLAYER_NUMBER, "Error: max players = 9") // adaptar a lo que sea...
 

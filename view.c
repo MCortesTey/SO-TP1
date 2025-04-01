@@ -120,13 +120,12 @@ void print_board(game_t *game_state) {
                 printf("%s%2d %s", SCORE_COLOR, cell, COLOR_RESET);
             } else {
                 // Jugador - bloque de color sólido
-                int player_idx = -cell; 
+                int player_idx = -1 * cell; 
                 int is_head = 0;//Me fijo si es cabeza
                 
-                if(player_idx >= 0 && player_idx < game_state->player_number) {
-                    player_t player = game_state->players[player_idx];
-                    is_head = (x == player.x_coord && y == player.y_coord);
-                }
+                player_t player = game_state->players[player_idx];
+                is_head = (x == player.x_coord && y == player.y_coord);
+                
                 printf("%s   %s", is_head ? bright_player_colors[player_idx] : player_colors[player_idx], COLOR_RESET);
             }
         }
@@ -145,7 +144,7 @@ void print_board(game_t *game_state) {
     for(unsigned int i = 0; i < game_state->player_number; i++) {
         player_t player = game_state->players[i];
         if(player.pid != 0) {  // Si el jugador está activo
-            printf("%sJugador %d%s (%s): Score=%d, Pos=(%d,%d)%s\n", 
+            printf("%sJugador %u%s (%s): Score=%u, Pos=(%d,%d)%s\n", 
                 text_colors[i],
                 i, 
                 COLOR_RESET,

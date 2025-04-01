@@ -21,14 +21,14 @@
 
 enum MOVEMENTS {UP = 0, UP_RIGHT, RIGHT, DOWN_RIGHT, DOWN, DOWN_LEFT, LEFT, UP_LEFT, NONE};
 
-unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos);
+static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos);
 
 const int dx[] = {0,   1, 1, 1, 0, -1, -1, -1};
 const int dy[] = {-1, -1, 0, 1, 1,  1,   0, -1};
 
 #ifdef FIRST_POSSIBLE
 
-unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){ 
+static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos){ 
     for(int i = UP; i <= UP_LEFT; i++){
         int x = x_pos + dx[i];
         int y = y_pos + dy[i];
@@ -41,7 +41,7 @@ unsigned char generate_move(int width, int height, int board[], int x_pos, int y
 #endif
 
 #ifdef BEST_SCORE
-unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){
+static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos){
     int best_move = NONE;
     int max_score = -1;
 
@@ -59,7 +59,7 @@ unsigned char generate_move(int width, int height, int board[], int x_pos, int y
 #endif 
 
 #ifdef RANDOM
-unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){
+static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos){
     int valid_moves[8];
     int num_valid_moves = 0;
 
@@ -78,15 +78,15 @@ unsigned char generate_move(int width, int height, int board[], int x_pos, int y
 #endif
 
 #ifdef CLOCK
-unsigned char generate_move(int width, int height, int board[], int x_pos, int y_pos){
+static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos){
     static int i = UP;
     int original_i = i;
-    int x, y;
+
     
     do {
         i = i % 8;  // Mantener i entre 0 y 7
-        x = x_pos + dx[i];
-        y = y_pos + dy[i];
+        int x = x_pos + dx[i];
+        int y = y_pos + dy[i];
         
         if (x >= 0 && x < width && y >= 0 && y < height && board[y * width + x] > 0) {
             int move = i;
@@ -136,12 +136,13 @@ int main(int argc, char *argv[]) {
     //bool cut = false;
 
     int my_board[width*height];
-    int my_x, my_y;
+    
 
-    unsigned char move = NONE;
+    unsigned char move;
     //setvbuf(stdout, NULL, _IONBF, sizeof(move)); // Desactivar el buffering de stdout
 
     while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
+        int my_x, my_y;
         sem_wait(&sync->master_access_mutex); 
         sem_post(&sync->master_access_mutex);
         
