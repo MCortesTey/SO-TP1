@@ -109,7 +109,7 @@ int main(int argc, const char *argv[]) {
 
     
 
-    //size_t mov_count = 0;
+    size_t mov_count = 0;
 
     int width = atoi(argv[1]);
     IF_EXIT(width <= 0, "ancho inválido")
@@ -125,7 +125,7 @@ int main(int argc, const char *argv[]) {
 
     srand(getpid()); // provisorio, después ver como tunearlo para que sea más random aún
 
-    int player_id = 0; // el jugador va a identificarse a sí mismo!!
+    unsigned int player_id = 0; // el jugador va a identificarse a sí mismo!!
     pid_t my_pid = getpid();
 
     for (player_id = 0; player_id < game_state->player_number; player_id++){
@@ -177,12 +177,13 @@ int main(int argc, const char *argv[]) {
         if(move == NONE || game_state->has_finished || game_state->players[player_id].is_blocked){ // estoy bloqueado
             break;
         }
+        mov_count++;
 
         //IF_EXIT(putchar(move) == EOF, "Error al escribir movimiento en stdout")
         IF_EXIT(write(STDOUT_FILENO, &move, sizeof(move)) == -1, "Error al escribir movimiento en stdout")
         //fflush(stdout);
          
-        //while(!game_state->has_finished && !game_state->players[player_id].is_blocked && game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
+        while(!game_state->has_finished && !game_state->players[player_id].is_blocked && game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
         //usleep(2000000);
     }
     // Limpieza
