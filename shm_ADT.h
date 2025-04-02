@@ -1,9 +1,8 @@
-// This is a personal academic project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
-/*
-#ifndef SHARED_MEMORY_H
-#define SHARED_MEMORY_H
+#ifndef SHM_ADT_H
+#define SHM_ADT_H
 
+#include <stddef.h>
+#include <stdint.h>
 #include <semaphore.h>
 #include <stdbool.h>
 #include <sys/types.h>
@@ -39,5 +38,8 @@ typedef struct {
     unsigned int readers_count; // Cantidad de jugadores leyendo el estado
 } game_sync;
 
-#endif // SHARED_MEMORY_H
-*/
+
+void* create_shm(char* name, size_t size, int mode);
+void* connect_shm(char* name, size_t size, int flags);
+
+#endif // SHM_ADT_H 

@@ -1,16 +1,14 @@
-/*
-// This is a personal academic project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "shm_utils.h"
+#include "shm_ADT.h"
 #include "macros.h"
+
 
 void* create_shm(char *name, size_t size, int mode) {
     int fd = shm_open(name, O_RDWR | O_CREAT, mode);
@@ -41,4 +39,3 @@ void* connect_shm(char *name, size_t size, int flags) {
 
     return return_ptr;
 }
-*/

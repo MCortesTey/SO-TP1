@@ -12,9 +12,10 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "shm_utils.h"
+//#include "shm_utils.h"
 #include "constants.h"
-#include "shared_memory.h"
+//#include "shared_memory.h"
+#include "shm_ADT.h"
 
 // limpiar pantalla
 #define CLEAR_SCREEN printf("\033[2J\033[H")

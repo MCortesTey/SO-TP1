@@ -1,7 +1,7 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
-#include "shm_utils.h"
+//#include "shm_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +14,7 @@
 #include "shared_memory.h"
 #include "constants.h"
 #include "macros.h"
+#include "shm_ADT.h"
 
 // Estructura para el estado del tablero
 

@@ -16,37 +16,37 @@ all:  all_players view
 
 all_players: player_first_possible player_best_score player_random player_clock
 
-master: master.o shm_utils.o
-	$(CC) -o master master.o shm_utils.o $(LDFLAGS)
+master: master.o shm_ADT.o # shm_utils.o
+	$(CC) -o master master.o shm_ADT.o $(LDFLAGS)
 
-player_first_possible: player.o shm_utils.o
-	$(CC) -o player_first_possible player.o shm_utils.o $(LDFLAGS)
+player_first_possible: player.o shm_ADT.o # shm_utils.o
+	$(CC) -o player_first_possible player.o shm_ADT.o $(LDFLAGS)
 
-player_best_score: player_best_score.o shm_utils.o
-	$(CC) -o player_best_score player_best_score.o shm_utils.o $(LDFLAGS)
+player_best_score: player_best_score.o shm_ADT.o # shm_utils.o
+	$(CC) -o player_best_score player_best_score.o shm_ADT.o $(LDFLAGS)
 
-player_best_score.o: player.c shared_memory.h constants.h shm_utils.h
+player_best_score.o: player.c constants.h shm_ADT.h # shm_utils.h shared_memory.h
 	$(CC) $(GCCFLAGS) -DBEST_SCORE -c player.c -o player_best_score.o
 
-player.o: player.c shared_memory.h constants.h shm_utils.h
+player.o: player.c constants.h shm_ADT.h # shm_utils.h shared_memory.h
 	$(CC) $(GCCFLAGS) -DFIRST_POSSIBLE -c player.c -o player.o
 
-player_random: player_random.o shm_utils.o
-	$(CC) -o player_random player_random.o shm_utils.o $(LDFLAGS)
+player_random: player_random.o shm_ADT.o # shm_utils.o
+	$(CC) -o player_random player_random.o shm_ADT.o $(LDFLAGS)
 
-player_random.o: player.c shared_memory.h constants.h shm_utils.h
+player_random.o: player.c constants.h shm_ADT.h # shm_utils.h shared_memory.h
 	$(CC) $(GCCFLAGS) -DRANDOM -c player.c -o player_random.o
 
-player_clock: player_clock.o shm_utils.o
-	$(CC) -o player_clock player_clock.o shm_utils.o $(LDFLAGS)
+player_clock: player_clock.o shm_ADT.o # shm_utils.o
+	$(CC) -o player_clock player_clock.o shm_ADT.o $(LDFLAGS)
 
-player_clock.o: player.c shared_memory.h constants.h shm_utils.h
+player_clock.o: player.c constants.h shm_ADT.h # shm_utils.h shared_memory.h 
 	$(CC) $(GCCFLAGS) -DCLOCK -c player.c -o player_clock.o
 
-view: view.o shm_utils.o
-	$(CC) -o view view.o shm_utils.o $(LDFLAGS)
+view: view.o shm_ADT.o # shm_utils.o
+	$(CC) -o view view.o shm_ADT.o $(LDFLAGS)
 
-%.o: %.c shared_memory.h constants.h shm_utils.h
+%.o: %.c constants.h shm_ADT.h # shm_utils.h shared_memory.h
 	$(CC) $(GCCFLAGS) -c $<
 
 clean:

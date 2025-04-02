@@ -17,9 +17,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include "shared_memory.h"
-#include "shm_utils.h"
+//#include "shm_utils.h"
 #include "constants.h"
 #include "macros.h"
+#include "shm_ADT.h"
 
 #define DEFAULT_WIDTH 10
 #define DEFAULT_HEIGHT 10
@@ -39,7 +40,7 @@ void init_shared_sem(sem_t * sem, int initial_value){
     IF_EXIT_NON_ZERO(sem_init(sem,1,initial_value),"sem_init")
 }
 
-game_sync * createGameSync(){
+game_sync * create_game_sync(){
     game_sync * game_sync_ptr = create_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP); // 0666
     IF_EXIT_NULL(game_sync_ptr,"Could not create game_sync")
 
@@ -56,7 +57,7 @@ game_sync * createGameSync(){
 
 
 
-game_t * createGame(int width, int height, int n_players, char * players[]){
+game_t * create_game(int width, int height, int n_players, char * players[]){
     game_t * game_t_ptr = create_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP); // 0644
     IF_EXIT_NULL(game_t_ptr,"Could not create game_state")
 
@@ -163,8 +164,8 @@ int main(int argc, char const *argv[]){
     IF_EXIT(player_count < MIN_PLAYER_NUMBER,"Error: At least one player must be specified using -p.")
     IF_EXIT(player_count > MAX_PLAYER_NUMBER, "Error: max players = 9") // adaptar a lo que sea...
 
-    game_t * game = createGame(width, height, player_count, players);
-    game_sync* sync = createGameSync();
+    game_t * game = create_game(width, height, player_count, players);
+    game_sync* sync = create_game_sync();
 
     char board_dimensions[2][256];
     sprintf(board_dimensions[0],"%d",height);
