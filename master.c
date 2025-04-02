@@ -78,8 +78,6 @@ game_t * create_game(int width, int height, int n_players, char * players[]){
         game_t_ptr->players[i].is_blocked = false;
     }
 
-
-
     return game_t_ptr;
 }
 
