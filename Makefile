@@ -1,9 +1,9 @@
 # This is a personal academic project. Dear PVS-Studio, please check it.
 # PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
-GCCFLAGS = -Werror -Wall -g -fsanitize=address -Wextra -pedantic 
+GCCFLAGS = -lm -Werror -Wall -g -fsanitize=address -Wextra -pedantic 
 CC = gcc 
-LDFLAGS = -lrt -pthread -fsanitize=address 
+LDFLAGS = -lm -lrt -pthread -fsanitize=address 
 
 # Object files
 OBJS = master.o player.o view.o shm_utils.o
@@ -12,12 +12,12 @@ OBJS = master.o player.o view.o shm_utils.o
 PVS_ANALYZER = pvs-studio-analyzer
 PVS_REPORT = plog-converter
 
-all:  all_players view
+all: master all_players view
 
 all_players: player_first_possible player_best_score player_random player_clock
 
 master: master.o shm_ADT.o # shm_utils.o
-	$(CC) -o master master.o shm_ADT.o $(LDFLAGS)
+	$(CC) master.o shm_ADT.o $(LDFLAGS) -o master
 
 player_first_possible: player.o shm_ADT.o # shm_utils.o
 	$(CC) -o player_first_possible player.o shm_ADT.o $(LDFLAGS)

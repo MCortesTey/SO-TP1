@@ -16,6 +16,8 @@
 #include <getopt.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <math.h>
 #include "shared_memory.h"
 //#include "shm_utils.h"
 #include "constants.h"
@@ -40,6 +42,10 @@ void init_shared_sem(sem_t * sem, int initial_value){
     IF_EXIT_NON_ZERO(sem_init(sem,1,initial_value),"sem_init")
 }
 
+int rand_int(int min, int max) {
+    return (rand() % (max - min + 1)) + min;
+}
+
 game_sync * create_game_sync(){
     game_sync * game_sync_ptr = create_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP); // 0666
     IF_EXIT_NULL(game_sync_ptr,"Could not create game_sync")
@@ -57,7 +63,7 @@ game_sync * create_game_sync(){
 
 
 
-game_t * create_game(int width, int height, int n_players, char * players[]){
+game_t * create_game(int width, int height, int n_players, char * players[], int seed){
     game_t * game_t_ptr = create_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP); // 0644
     IF_EXIT_NULL(game_t_ptr,"Could not create game_state")
 
@@ -77,6 +83,29 @@ game_t * create_game(int width, int height, int n_players, char * players[]){
         game_t_ptr->players[i].pid = 0;
         game_t_ptr->players[i].is_blocked = false;
     }
+
+    // Inicializar el tablero
+    srand(seed);
+    for(int i = 0; i < width * height; i++) {
+        game_t_ptr->board_p[i] = rand_int(1, 9);
+    }
+
+    // Posicionar a los jugadores de manera elíptica
+    double angle_step = 2 * M_PI / n_players;
+    double a = (width - 1) / 2.0;  // semi-major axis
+    double b = (height - 1) / 2.0; // semi-minor axis
+    double center_x = a;
+    double center_y = b;
+
+    for(int i = 0; i < n_players; i++) {
+        double angle = i * angle_step;
+        int x_pos = (int)(center_x + a * cos(angle));
+        int y_pos = (int)(center_y + b * sin(angle));
+        game_t_ptr->players[i].x_coord = x_pos; // Coordenadas polares elípticas :)
+        game_t_ptr->players[i].y_coord = y_pos;
+        game_t_ptr->board_p[x_pos * width + y_pos] = -1*i; // Colocar a los jugadores en el tablero
+    }
+
 
     return game_t_ptr;
 }
@@ -126,7 +155,7 @@ void parse_arguments(int argc, char const *argv[], int *width, int *height, int 
             case 'v':
                 *view_path = optarg;
                 break;
-            case 'p':
+            case 'p': {
                 // BORRAR ESTOS COMENTARIOS
                 // optind es el índice del siguiente argumento a procesar
                 // Si paso: ./master -p player1 
@@ -141,6 +170,7 @@ void parse_arguments(int argc, char const *argv[], int *width, int *height, int 
                     players[(*player_count)++] = strdup(argv[index++]); // strdup reserva espacio de almacenamiento para una copia de serie llamando a malloc
                 }
                 break;
+            }
             case '?':
                 fprintf(stderr, "Usage: ./ChompChamps_arm64 [-w width] [-h height] [-d delay] [-s seed] [-v view] [-t timeout] -p player1 player2 ...\n");
                 exit(EXIT_FAILURE);
@@ -149,6 +179,92 @@ void parse_arguments(int argc, char const *argv[], int *width, int *height, int 
                 exit(EXIT_FAILURE);
         }
     }
+
+    IF_EXIT(*player_count < MIN_PLAYER_NUMBER,"Error: At least one player must be specified using -p.")
+}
+
+typedef struct {
+    int player_id;
+    enum MOVEMENTS move;
+
+} player_movement;
+
+
+
+player_movement recibir_movimientos(int pipes[MAX_PLAYER_NUMBER][2], int player_count, int timeout){
+    unsigned char move = NONE;
+    static int last_player = 0; // Política de round robin
+    int current_player = last_player;
+    time_t start_time;
+    time(&start_time);
+    bool time_ran_out = false;
+    ssize_t bytes_read;
+    do
+    {
+        bytes_read = read(pipes[current_player][READ_END], &move, sizeof(move));
+        IF_EXIT(bytes_read == -1, "read")
+
+        if(bytes_read == 0){
+            current_player = (current_player + 1) % player_count;
+            last_player = current_player;
+            continue;
+        } else {
+            return (player_movement){current_player, move}; // Retornar el movimiento del jugador actual
+        }
+        time_ran_out = difftime(time(NULL), start_time) >= timeout;
+    } while (!time_ran_out);
+
+    return (player_movement){-1, NONE}; // Timeout
+}
+
+bool procesar_movimiento(game_t * game, player_movement pm){
+    // Verificar si el movimiento es válido
+    if(pm.player_id == -1) { // Timeout
+        return true;
+    }
+
+    if(pm.move < 0 || pm.move > 7 || game->players[pm.player_id].is_blocked) { // Invalid movement
+        game->players[pm.player_id].invalid_mov_requests++;
+        return false;
+    }
+    int new_x = game->players[pm.player_id].x_coord + dx[pm.move];
+    int new_y = game->players[pm.player_id].y_coord + dy[pm.move];
+
+    if(new_x < 0 || new_x >= game->board_width || new_y < 0 || new_y >= game->board_height){
+        game->players[pm.player_id].invalid_mov_requests++;
+    } else {
+        game->players[pm.player_id].valid_mov_request++;
+        game->players[pm.player_id].x_coord = new_x;
+        game->players[pm.player_id].y_coord = new_y;
+        game->players[pm.player_id].score += game->board_p[new_x * game->board_width + new_y];
+        game->board_p[new_x * game->board_width + new_y] = -1 * pm.player_id; // Colocar al jugador en el tablero
+    }
+
+    // Verificar si el jugador está bloqueado
+    bool blocked = true;
+    for(int i = UP; i <= UP_LEFT; i++){
+        int check_x = game->players[pm.player_id].x_coord + dx[i];
+        int check_y = game->players[pm.player_id].y_coord + dy[i];
+        if(check_x >= 0 && check_x < game->board_width && check_y >= 0 && check_y < game->board_height && game->board_p[check_x * game->board_width + check_y] > 0){
+            blocked = false;
+            break;
+        }
+    }
+
+    if(blocked){
+        game->players[pm.player_id].is_blocked = true;
+        bool all_blocked = true;
+        for(unsigned int i = 0; i < game->player_number; i++){
+            if(!game->players[i].is_blocked){
+                all_blocked = false;
+                break;
+            }
+        }
+        if(all_blocked){
+            return true;
+        }
+    }
+    return false;
 }
 
 int main(int argc, char const *argv[]){
@@ -158,11 +274,8 @@ int main(int argc, char const *argv[]){
     char *players[MAX_PLAYERS];
 
     parse_arguments(argc, argv, &width, &height, &delay, &timeout, &seed, &view_path, players, &player_count);
-    
-    IF_EXIT(player_count < MIN_PLAYER_NUMBER,"Error: At least one player must be specified using -p.")
-    IF_EXIT(player_count > MAX_PLAYER_NUMBER, "Error: max players = 9") // adaptar a lo que sea...
 
-    game_t * game = create_game(width, height, player_count, players);
+    game_t * game = create_game(width, height, player_count, players, seed);
     game_sync* sync = create_game_sync();
 
     char board_dimensions[2][256];
@@ -180,7 +293,7 @@ int main(int argc, char const *argv[]){
     }
 
     // Crear pipe para view si existe
-    if(view_path != NULL){
+    if(!IS_NULL(view_path)){
         IF_EXIT_NON_ZERO(pipe(pipes[player_count]), "pipe view")
     }
 
@@ -240,8 +353,14 @@ int main(int argc, char const *argv[]){
     while (!game->has_finished) {
 
         // Leer movimientos de los jugadores
-       
+        player_movement pm = recibir_movimientos(pipes, player_count, timeout);
 
+        sem_wait(&sync->master_access_mutex);
+        sem_wait(&sync->game_state_mutex);
+        sem_post(&sync->master_access_mutex);
+
+        // Mover
+        game->has_finished = procesar_movimiento(game, pm);
 
         // Señalar al view que hay cambios para imprimir
         sem_post(&sync->print_needed);
@@ -249,20 +368,54 @@ int main(int argc, char const *argv[]){
         // Esperar a que el view termine de imprimir
         sem_wait(&sync->print_done);
 
+        sem_post(&sync->game_state_mutex);
     }
+
+    // wait a la vista
+    if(view_path != NULL){
+        IF_EXIT_NON_ZERO(waitpid(view_pid, NULL, 0), "waitpid view")
+    }
+    // wait a los jugadores
+    int remaining_players = player_count;
+    while (remaining_players > 0) {
+        for(int i = 0; i < player_count; i++) {
+            if (game->players[i].pid != 0) {  // Si el pid es 0, ya lo procesamos
+                int status;
+                pid_t result = waitpid(game->players[i].pid, &status, WNOHANG);
+                IF_EXIT(result == -1, "waitpid player")
+                
+                if (result > 0) {  // El proceso terminó
+                    printf("Player %s finished\n", game->players[i].name);
+                    free(players[i]);
+                    IF_EXIT_NON_ZERO(close(pipes[i][READ_END]),"close")
+                    IF_EXIT_NON_ZERO(close(pipes[i][WRITE_END]),"close")
+                    game->players[i].pid = 0;  // Marcar como procesado
+                    remaining_players--;
+                }
+            }
+        }
+        if (remaining_players > 0) {
+            usleep(1000);  // Pequeña pausa para no consumir CPU innecesariamente
+        }
+    }
+
+    if(view_path != NULL) {
+        IF_EXIT_NON_ZERO(close(pipes[player_count][READ_END]),"close")
+        IF_EXIT_NON_ZERO(close(pipes[player_count][WRITE_END]),"close")
+    }
+
+    // Destroy semaphores
+    sem_destroy(&sync->print_needed);
+    sem_destroy(&sync->print_done);
+    sem_destroy(&sync->master_access_mutex);
+    sem_destroy(&sync->game_state_mutex);
+    sem_destroy(&sync->reader_count_mutex);
 
     IF_EXIT_NON_ZERO(munmap(game,sizeof(game_t) + sizeof(int)*(width*height)), "munmap game")
     IF_EXIT_NON_ZERO(munmap(sync,sizeof(game_sync)), "munmap game")
 
     IF_EXIT_NON_ZERO(shm_unlink(SHM_GAME_PATH), "shm_unlink game")
     IF_EXIT_NON_ZERO(shm_unlink(SHM_GAME_SEMS_PATH), "shm_unlink sync")
-
-    // libera espacio de los nombres y pipes
-    for(int i = 0; i < player_count; i++){
-        free(players[i]);
-        IF_EXIT_NON_ZERO(close(pipes[i][READ_END]),"close")
-        IF_EXIT_NON_ZERO(close(pipes[i][WRITE_END]),"close")
-    }
 
 
     return 0;

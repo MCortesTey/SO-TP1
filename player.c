@@ -20,12 +20,8 @@
 
 // Principal del jugador
 
-enum MOVEMENTS {UP = 0, UP_RIGHT, RIGHT, DOWN_RIGHT, DOWN, DOWN_LEFT, LEFT, UP_LEFT, NONE};
 
 static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos);
-
-const int dx[] = {0,   1, 1, 1, 0, -1, -1, -1};
-const int dy[] = {-1, -1, 0, 1, 1,  1,   0, -1};
 
 #ifdef FIRST_POSSIBLE
 
@@ -176,10 +172,10 @@ int main(int argc, const char *argv[]) {
         if(move == NONE || game_state->has_finished || game_state->players[player_id].is_blocked){ // estoy bloqueado
             break;
         }
-        mov_count++;
 
         //IF_EXIT(putchar(move) == EOF, "Error al escribir movimiento en stdout")
         IF_EXIT(write(STDOUT_FILENO, &move, sizeof(move)) == -1, "Error al escribir movimiento en stdout")
+        mov_count++;
         //fflush(stdout);
          
         while(!game_state->has_finished && !game_state->players[player_id].is_blocked && game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
