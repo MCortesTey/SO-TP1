@@ -325,7 +325,7 @@ int main(int argc, char const *argv[]){
         }
     }
 
-    pid_t view_pid;
+    pid_t view_pid = 0;
     if(view_path != NULL){
         pid_t pid = fork();
         IF_EXIT(pid < 0, "fork view")
@@ -372,7 +372,7 @@ int main(int argc, char const *argv[]){
     }
 
     // wait a la vista
-    if(view_path != NULL){
+    if(view_path != NULL && view_pid > 0){
         IF_EXIT_NON_ZERO(waitpid(view_pid, NULL, 0), "waitpid view")
     }
     // wait a los jugadores

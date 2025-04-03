@@ -1,7 +1,7 @@
 # This is a personal academic project. Dear PVS-Studio, please check it.
 # PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
-GCCFLAGS = -lm -Werror -Wall -g -fsanitize=address -Wextra -pedantic 
+GCCFLAGS = -lm -Werror -Wall -g -fsanitize=address -Wextra -pedantic -Os
 CC = gcc 
 LDFLAGS = -lm -lrt -pthread -fsanitize=address 
 
