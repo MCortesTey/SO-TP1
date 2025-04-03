@@ -9,6 +9,9 @@
 #include <time.h>
 #include <sys/shm.h>
 #include <sys/types.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <semaphore.h>
@@ -191,30 +194,71 @@ typedef struct {
 
 
 
-player_movement recibir_movimientos(int pipes[MAX_PLAYER_NUMBER][2], int player_count, int timeout){
-    unsigned char move = NONE;
-    static int last_player = 0; // Política de round robin
+player_movement recibir_movimientos(game_t * game, int pipes[MAX_PLAYER_NUMBER][2], int player_count, int timeout) {
+    static int last_player = 0;  // Para mantener política round robin
+    fd_set read_fds;
+    struct timeval tv;
+    int max_fd = -1;
+
+    // Configurar el timeout (es el timeout que necesita el select)
+    tv.tv_sec = timeout;
+    tv.tv_usec = 0;
+
+    // Inicializar el conjunto de descriptores
+    FD_ZERO(&read_fds);
+
+    // Agregar los pipes al conjunto, siguiendo round robin
     int current_player = last_player;
-    time_t start_time;
-    time(&start_time);
-    bool time_ran_out = false;
-    ssize_t bytes_read;
-    do
-    {
-        bytes_read = read(pipes[current_player][READ_END], &move, sizeof(move));
-        IF_EXIT(bytes_read == -1, "read")
-
-        if(bytes_read == 0){
-            current_player = (current_player + 1) % player_count;
-            last_player = current_player;
-            continue;
-        } else {
-            return (player_movement){current_player, move}; // Retornar el movimiento del jugador actual
+    for(int i = 0; i < player_count; i++) {
+        if (!game->players[current_player].is_blocked) {
+            FD_SET(pipes[current_player][READ_END], &read_fds);
+            if (pipes[current_player][READ_END] > max_fd) {
+                max_fd = pipes[current_player][READ_END];
+            }
         }
-        time_ran_out = difftime(time(NULL), start_time) >= timeout;
-    } while (!time_ran_out);
+        current_player = (current_player + 1) % player_count;
+    }
 
-    return (player_movement){-1, NONE}; // Timeout
+    // Si no hay descriptores para monitorear, todos están bloqueados
+    if (max_fd == -1) {
+        return (player_movement){-1, NONE};
+    }
+
+    // Esperar por datos en los pipes
+    int ready = select(max_fd + 1, &read_fds, NULL, NULL, &tv);
+    
+    if (ready == -1) {
+        IF_EXIT(true, "select")
+    } else if (ready == 0) {
+        // Timeout
+        return (player_movement){-1, NONE};
+    }
+
+    // Verificar qué pipe tiene datos, siguiendo round robin
+    current_player = last_player;
+    for(int i = 0; i < player_count; i++) {
+        if (!game->players[current_player].is_blocked && 
+            FD_ISSET(pipes[current_player][READ_END], &read_fds)) {
+            
+            unsigned char move;
+            ssize_t bytes_read = read(pipes[current_player][READ_END], &move, sizeof(move));
+            
+            if (bytes_read == -1) {
+                IF_EXIT(true, "read")
+            } else if (bytes_read == 0) {
+                // EOF detectado - marcar jugador como bloqueado
+                game->players[current_player].is_blocked = true;
+            } else {
+                // Movimiento válido recibido
+                last_player = (current_player + 1) % player_count;
+                return (player_movement){current_player, move};
+            }
+        }
+        current_player = (current_player + 1) % player_count;
+    }
+
+    // Si llegamos aquí, no se recibieron datos válidos
+    return (player_movement){-1, NONE};
 }
 
 bool procesar_movimiento(game_t * game, player_movement pm){
@@ -318,6 +362,7 @@ int main(int argc, char const *argv[]){
             execv(players[i], player_args);
             IF_EXIT(true,"execv player") // no debería llegar acá.
         } else if(pid > 0){ // PADRE
+            sleep(1);
             // close unused pipes
             IF_EXIT_NON_ZERO(close(pipes[i][WRITE_END]),"close")
 
@@ -348,20 +393,19 @@ int main(int argc, char const *argv[]){
         }
     }
     
-
+    puts("aa");
     // Bucle principal del master
     while (!game->has_finished) {
-
+        puts("bb");
         // Leer movimientos de los jugadores
-        player_movement pm = recibir_movimientos(pipes, player_count, timeout);
-
+        player_movement pm = recibir_movimientos(game,pipes, player_count, timeout);
+        puts("aa");
         sem_wait(&sync->master_access_mutex);
         sem_wait(&sync->game_state_mutex);
         sem_post(&sync->master_access_mutex);
 
         // Mover
         game->has_finished = procesar_movimiento(game, pm);
-
         // Señalar al view que hay cambios para imprimir
         sem_post(&sync->print_needed);
         
@@ -370,6 +414,7 @@ int main(int argc, char const *argv[]){
 
         sem_post(&sync->game_state_mutex);
     }
+    puts("cc");
 
     // wait a la vista
     if(view_path != NULL && view_pid > 0){
