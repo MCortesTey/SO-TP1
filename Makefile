@@ -1,9 +1,9 @@
 # This is a personal academic project. Dear PVS-Studio, please check it.
 # PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
-GCCFLAGS = -lm -Werror -Wall -g -fsanitize=address -Wextra -pedantic -Os
+GCCFLAGS = -lm -Werror -Wall -g -fsanitize=address -Wextra
 CC = gcc 
-LDFLAGS = -lm -lrt -pthread -fsanitize=address 
+LDFLAGS = -lm -lrt -pthread -fsanitize=address -g
 
 # Object files
 OBJS = master.o player.o view.o shm_utils.o
@@ -51,6 +51,7 @@ view: view.o shm_ADT.o # shm_utils.o
 
 clean:
 	rm -rf *.o master player_first_possible player_random player_best_score player_clock view PVS-Studio.html *log strace_out
+
 
 # Comandos para análisis
 analyze: clean

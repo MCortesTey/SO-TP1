@@ -125,10 +125,11 @@ int main(int argc, const char *argv[]) {
 
     for (player_id = 0; player_id < game_state->player_number; player_id++){
         if(game_state->players[player_id].pid == my_pid){
+            printf("Soy el jugador %d\n", player_id);
             break;
         }
     }
-
+    
     IF_EXIT(player_id == game_state->player_number, "player could not identify itself")
     //bool cut = false;
 

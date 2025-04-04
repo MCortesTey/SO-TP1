@@ -54,9 +54,9 @@ game_sync * create_game_sync(){
     IF_EXIT_NULL(game_sync_ptr,"Could not create game_sync")
 
     // setear semáforos iniciales
-    init_shared_sem(&game_sync_ptr->print_needed,0);
-    init_shared_sem(&game_sync_ptr->print_done,1);
-    init_shared_sem(&game_sync_ptr->master_access_mutex,1);
+    init_shared_sem(&game_sync_ptr->print_needed,1);
+    init_shared_sem(&game_sync_ptr->print_done,0);
+    init_shared_sem(&game_sync_ptr->master_access_mutex,0);
     init_shared_sem(&game_sync_ptr->game_state_mutex,1);
     init_shared_sem(&game_sync_ptr->reader_count_mutex,1);
     game_sync_ptr->readers_count = 0;
@@ -95,18 +95,18 @@ game_t * create_game(int width, int height, int n_players, char * players[], int
 
     // Posicionar a los jugadores de manera elíptica
     double angle_step = 2 * M_PI / n_players;
-    double a = (width - 1) / 2.0;  // semi-major axis
-    double b = (height - 1) / 2.0; // semi-minor axis
+    double a = (width  * 0.75) / 2.0;  // semi-major axis
+    double b = (height * 0.75) / 2.0; // semi-minor axis
     double center_x = a;
     double center_y = b;
 
     for(int i = 0; i < n_players; i++) {
         double angle = i * angle_step;
-        int x_pos = (int)(center_x + a * cos(angle));
+        int x_pos = (int)(center_x + a * cos(angle)); // Coordenadas polares elípticas :)
         int y_pos = (int)(center_y + b * sin(angle));
-        game_t_ptr->players[i].x_coord = x_pos; // Coordenadas polares elípticas :)
+        game_t_ptr->players[i].x_coord = x_pos; 
         game_t_ptr->players[i].y_coord = y_pos;
-        game_t_ptr->board_p[x_pos * width + y_pos] = -1*i; // Colocar a los jugadores en el tablero
+        game_t_ptr->board_p[y_pos * width + x_pos] = -1*i; // Colocar a los jugadores en el tablero
     }
 
 
@@ -144,7 +144,6 @@ void parse_arguments(int argc, char const *argv[], int *width, int *height, int 
                 break;
             case 'd':
                 *delay = atoi(optarg);
-                IF_EXIT(*delay == 0, "atoi delay")
                 IF_EXIT(*delay < 0, "delay menor que cero")
                 break;
             case 't':
@@ -166,7 +165,6 @@ void parse_arguments(int argc, char const *argv[], int *width, int *height, int 
                 int index = optind - 1; // argv[index] = optarg
 
                 while(index < argc && argv[index][0] != '-') {
-                    IF_EXIT(strlen(argv[index]) > MAX_NAME_LEN, "Error: Player name too long")
                     IF_EXIT(index - (optind - 1) >= MAX_PLAYER_NUMBER, "Error: Too many players")
 
                     // Recuerde liberar el almacenamiento reservado con la llamada a strdup.
@@ -274,14 +272,14 @@ bool procesar_movimiento(game_t * game, player_movement pm){
     int new_x = game->players[pm.player_id].x_coord + dx[pm.move];
     int new_y = game->players[pm.player_id].y_coord + dy[pm.move];
 
-    if(new_x < 0 || new_x >= game->board_width || new_y < 0 || new_y >= game->board_height){
+    if(new_x < 0 || new_x >= game->board_width || new_y < 0 || new_y >= game->board_height || game->board_p[new_y * game->board_width + new_x] <= 0) { // Invalid move
         game->players[pm.player_id].invalid_mov_requests++;
     } else {
         game->players[pm.player_id].valid_mov_request++;
         game->players[pm.player_id].x_coord = new_x;
-        game->players[pm.player_id].y_coord = new_y;
-        game->players[pm.player_id].score += game->board_p[new_x * game->board_width + new_y];
-        game->board_p[new_x * game->board_width + new_y] = -1 * pm.player_id; // Colocar al jugador en el tablero
+        game->players[pm.player_id].y_coord = new_y; 
+        game->players[pm.player_id].score += game->board_p[new_y * game->board_width + new_x];
+        game->board_p[new_y * game->board_width + new_x] = -1 * pm.player_id; // Colocar al jugador en el tablero
     }
 
     // Verificar si el jugador está bloqueado
@@ -289,7 +287,7 @@ bool procesar_movimiento(game_t * game, player_movement pm){
     for(int i = UP; i <= UP_LEFT; i++){
         int check_x = game->players[pm.player_id].x_coord + dx[i];
         int check_y = game->players[pm.player_id].y_coord + dy[i];
-        if(check_x >= 0 && check_x < game->board_width && check_y >= 0 && check_y < game->board_height && game->board_p[check_x * game->board_width + check_y] > 0){
+        if(check_x >= 0 && check_x < game->board_width && check_y >= 0 && check_y < game->board_height && game->board_p[check_y * game->board_width + check_x] > 0){
             blocked = false;
             break;
         }
@@ -321,7 +319,6 @@ int main(int argc, char const *argv[]){
 
     game_t * game = create_game(width, height, player_count, players, seed);
     game_sync* sync = create_game_sync();
-
     char board_dimensions[2][256];
     sprintf(board_dimensions[0],"%d",height);
     sprintf(board_dimensions[1],"%d",width);
@@ -333,41 +330,7 @@ int main(int argc, char const *argv[]){
 
     // Crear pipes para jugadores
     for(int i = 0; i < player_count; i++){
-        IF_EXIT_NON_ZERO(pipe(pipes[i]), "pipe")
-    }
-
-    // Crear pipe para view si existe
-    if(!IS_NULL(view_path)){
-        IF_EXIT_NON_ZERO(pipe(pipes[player_count]), "pipe view")
-    }
-
-    for(int i=0; i < player_count; i++){
-        pid_t pid = fork();
-        IF_EXIT(pid < 0, "fork player")
-        if(pid == 0){ // HIJO
-            // cierro stdout 
-            // dup pipe
-            // cierro pipe que dupliqué
-            // cierro los otros pipes porque no me sirven
-            IF_EXIT_NON_ZERO(dup2(pipes[i][WRITE_END],STDOUT_FILENO),"dup2")
-
-
-            // PENSAR SI QUIZÁS NO CONVIENE CERRAR SOLAMENTE PARA j!=i
-
-            for(int j = 0; j < player_count; j++){ // close unused pipes
-                IF_EXIT(close(pipes[j][READ_END]) != 0, "close")
-                IF_EXIT(close(pipes[j][WRITE_END]) != 0, "close")
-            }
-            char *player_args[] = {players[i], board_dimensions[0], board_dimensions[1], NULL};
-            execv(players[i], player_args);
-            IF_EXIT(true,"execv player") // no debería llegar acá.
-        } else if(pid > 0){ // PADRE
-            sleep(1);
-            // close unused pipes
-            IF_EXIT_NON_ZERO(close(pipes[i][WRITE_END]),"close")
-
-            game->players[i].pid = pid;
-        }
+        IF_EXIT_NON_ZERO(pipe(pipes[i]), "pipe player")
     }
 
     pid_t view_pid = 0;
@@ -376,13 +339,15 @@ int main(int argc, char const *argv[]){
         IF_EXIT(pid < 0, "fork view")
         if(pid == 0){ 
             // Redirigir stdout al pipe del view
-            IF_EXIT_NON_ZERO(dup2(pipes[player_count][WRITE_END], STDOUT_FILENO), "dup2")
 
-            // Cerrar todos los pipes que no se usan
-            for(int j = 0; j < player_count + 1; j++){ 
-                IF_EXIT_NON_ZERO(close(pipes[j][READ_END]), "close")
-                IF_EXIT_NON_ZERO(close(pipes[j][WRITE_END]), "close")
-            }
+            //IF_EXIT(dup2(pipes[player_count][WRITE_END], STDOUT_FILENO) == -1, "dup2")
+
+            //Cerrar todos los pipes que no se usan
+
+            // for(int j = 0; j < player_count + 1; j++){ 
+            //     IF_EXIT_NON_ZERO(close(pipes[j][READ_END]), "close unused pipe view") 
+            //     IF_EXIT_NON_ZERO(close(pipes[j][WRITE_END]), "close unused pipe view")
+            // }
 
             char *view_args[] = {view_path, board_dimensions[0], board_dimensions[1], NULL};
             execv(view_path, view_args);
@@ -392,33 +357,67 @@ int main(int argc, char const *argv[]){
             view_pid = pid;
         }
     }
-    
-    puts("aa");
+
+    for(int i = 0; i < player_count; i++){
+        pid_t pid = fork();
+        IF_EXIT(pid < 0, "fork player")
+        if(pid == 0){ // HIJO
+            // cierro stdout 
+            // dup pipe
+            // cierro pipe que dupliqué
+            // cierro los otros pipes porque no me sirven
+            
+            IF_EXIT_NON_ZERO(close(STDOUT_FILENO), "close stdout")
+            IF_EXIT(dup(pipes[i][WRITE_END]) == -1, "dup") 
+
+            // PENSAR SI QUIZÁS NO CONVIENE CERRAR SOLAMENTE PARA j!=i
+            // for(int j = 0; j < player_count; j++){ // close unused pipes
+            //     IF_EXIT(close(pipes[j][READ_END]) != 0, "close pipe player read-end")
+            //     IF_EXIT(close(pipes[j][WRITE_END]) != 0, "close pipe player write-end") 
+            // }
+            game->players[i].pid = getpid(); // setear el pid del jugador en la memoria compartida
+            char *player_args[] = {players[i], board_dimensions[0], board_dimensions[1], NULL};
+            execv(players[i], player_args);
+            IF_EXIT(true,"execv player") // no debería llegar acá.
+        } else if(pid > 0){ // PADRE
+            // close unused pipes
+            IF_EXIT_NON_ZERO(close(pipes[i][WRITE_END]),"close unused pipe")
+
+            // game->players[i].pid = pid;
+            // si hacemos esto acá no garantiza que player no corra antes y no matchee, por eso se hace antes del execve!!
+        }
+    }
+
+    sem_post(&sync->master_access_mutex); // liberar el mutex para que los jugadores puedan leer el estado del juego
     // Bucle principal del master
     while (!game->has_finished) {
-        puts("bb");
+
         // Leer movimientos de los jugadores
         player_movement pm = recibir_movimientos(game,pipes, player_count, timeout);
-        puts("aa");
+
         sem_wait(&sync->master_access_mutex);
         sem_wait(&sync->game_state_mutex);
         sem_post(&sync->master_access_mutex);
 
         // Mover
         game->has_finished = procesar_movimiento(game, pm);
+
         // Señalar al view que hay cambios para imprimir
         sem_post(&sync->print_needed);
         
         // Esperar a que el view termine de imprimir
         sem_wait(&sync->print_done);
-
+        usleep(delay); // Esperar el delay
         sem_post(&sync->game_state_mutex);
+        
     }
-    puts("cc");
+
 
     // wait a la vista
     if(view_path != NULL && view_pid > 0){
-        IF_EXIT_NON_ZERO(waitpid(view_pid, NULL, 0), "waitpid view")
+        int exit_status;
+        waitpid(view_pid, &exit_status, 0);
+        printf("View finished (%d)\n", exit_status);
     }
     // wait a los jugadores
     int remaining_players = player_count;
@@ -430,24 +429,18 @@ int main(int argc, char const *argv[]){
                 IF_EXIT(result == -1, "waitpid player")
                 
                 if (result > 0) {  // El proceso terminó
-                    printf("Player %s finished\n", game->players[i].name);
+                    printf("Player %16s finished (%d)\n", game->players[i].name, status);
                     free(players[i]);
-                    IF_EXIT_NON_ZERO(close(pipes[i][READ_END]),"close")
-                    IF_EXIT_NON_ZERO(close(pipes[i][WRITE_END]),"close")
+                    //IF_EXIT_NON_ZERO(close(pipes[i][READ_END]),"close")
+                    //IF_EXIT_NON_ZERO(close(pipes[i][WRITE_END]),"close")
                     game->players[i].pid = 0;  // Marcar como procesado
                     remaining_players--;
                 }
             }
         }
-        if (remaining_players > 0) {
-            usleep(1000);  // Pequeña pausa para no consumir CPU innecesariamente
-        }
+
     }
 
-    if(view_path != NULL) {
-        IF_EXIT_NON_ZERO(close(pipes[player_count][READ_END]),"close")
-        IF_EXIT_NON_ZERO(close(pipes[player_count][WRITE_END]),"close")
-    }
 
     // Destroy semaphores
     sem_destroy(&sync->print_needed);
@@ -461,7 +454,6 @@ int main(int argc, char const *argv[]){
 
     IF_EXIT_NON_ZERO(shm_unlink(SHM_GAME_PATH), "shm_unlink game")
     IF_EXIT_NON_ZERO(shm_unlink(SHM_GAME_SEMS_PATH), "shm_unlink sync")
-
 
     return 0;
 }
