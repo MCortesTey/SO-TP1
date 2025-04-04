@@ -1,24 +1,18 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
-//#include "shm_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>           // Para O_* constantes
-#include <sys/mman.h>       // Para shm_open y mmap
-#include <sys/stat.h>       // Para mode constants
-#include <semaphore.h>       // Para semaforos POSIX
-#include <unistd.h>         // Para sleep
+#include <fcntl.h>           
+#include <sys/mman.h>       
+#include <sys/stat.h>       
+#include <semaphore.h>       
+#include <unistd.h>         
 #include <time.h>
-#include "shared_memory.h"
 #include "constants.h"
 #include "macros.h"
 #include "shm_ADT.h"
-
-// Estructura para el estado del tablero
-
-// Principal del jugador
 
 
 static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos);
@@ -30,10 +24,10 @@ static inline unsigned char generate_move(int width, int height, const int board
         int x = x_pos + dx[i];
         int y = y_pos + dy[i];
         if (x >= 0 && x < width && y >= 0 && y < height && board[y * width + x] > 0) {
-            return i; // devuelve el movimiento
+            return i;  // return first valid mov
         }
     }
-    return NONE; // si no hay movimientos válidos, devuelve NONE
+    return NONE;
 }
 #endif
 
@@ -43,7 +37,8 @@ static inline unsigned char generate_move(int width, int height, const int board
     int max_score = -1;
 
     for (int i = UP; i <= UP_LEFT; i++) {
-        int x = x_pos + dx[i], y = y_pos + dy[i];
+        int x = x_pos + dx[i];
+        int y = y_pos + dy[i];
         if (x >= 0 && x < width && y >= 0 && y < height) {
             if (board[y * width + x] > max_score) {
                 max_score = board[y * width + x];
@@ -51,13 +46,13 @@ static inline unsigned char generate_move(int width, int height, const int board
             }
         }
     }
-    return best_move;
+    return best_move; // return direction with best score
 }
 #endif 
 
 #ifdef RANDOM
 static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos){
-    int valid_moves[8] = {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE};
+    int valid_moves[8];
     int num_valid_moves = 0;
 
     for (int i = UP; i <= UP_LEFT; i++) {
@@ -68,9 +63,9 @@ static inline unsigned char generate_move(int width, int height, const int board
     }
 
     if (num_valid_moves > 0) {
-        return valid_moves[rand() % num_valid_moves]; // devuelve un movimiento aleatorio
+        return valid_moves[rand() % num_valid_moves]; // return random move from possibles
     }
-    return NONE; // si no hay movimientos válidos
+    return NONE;
 }
 #endif
 
@@ -81,20 +76,20 @@ static inline unsigned char generate_move(int width, int height, const int board
 
     
     do {
-        i = i % 8;  // Mantener i entre 0 y 7
+        i = i % 8;  
         int x = x_pos + dx[i];
         int y = y_pos + dy[i];
         
         if (x >= 0 && x < width && y >= 0 && y < height && board[y * width + x] > 0) {
             int move = i;
-            i = (i + 1) % 8;  // Preparar para la siguiente llamada
+            i = (i + 1) % 8;  
             return move;
         }
         
         i++;
-    } while (i != original_i);  // Continuar hasta que hayamos verificado todas las direcciones
+    } while (i != original_i); // check for all directions
     
-    return NONE;  // Solo si no encontramos ningún movimiento válido
+    return NONE;
 }
 #endif
 
@@ -112,16 +107,13 @@ int main(int argc, const char *argv[]) {
     int height = atoi(argv[2]);
     IF_EXIT(height <= 0, "alto inválido")
 
-    // Conectar a la memoria compartida del juego
     game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), O_RDONLY);
-
-    // Conectar a la memoria compartida de sincronización
     game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), O_RDWR);
 
-    unsigned int player_id = 0; // el jugador va a identificarse a sí mismo!!
+    unsigned int player_id = 0; 
     pid_t my_pid = getpid();
 
-    srand(my_pid); // provisorio, después ver como tunearlo para que sea más random aún
+    srand(my_pid);
 
     for (player_id = 0; player_id < game_state->player_number; player_id++){
         if(game_state->players[player_id].pid == my_pid){
@@ -131,33 +123,28 @@ int main(int argc, const char *argv[]) {
     }
     
     IF_EXIT(player_id == game_state->player_number, "player could not identify itself")
-    //bool cut = false;
 
     int my_board[width*height];
 
     unsigned char move = NONE;
-    setvbuf(stdout, NULL, _IONBF, sizeof(move)); // Desactivar el buffering de stdout
 
     while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
         int my_x, my_y;
         sem_wait(&sync->master_access_mutex); 
         sem_post(&sync->master_access_mutex);
         
-        // lee estado de juego
-        sem_wait(&sync->reader_count_mutex); // bloquea el reader count
-        sync->readers_count++;  // incrementa el reader count
+        sem_wait(&sync->reader_count_mutex); 
+        sync->readers_count++; 
         if (sync->readers_count == 1) { 
-            sem_wait(&sync->game_state_mutex); // si hay un solo lector bloquea el game state
+            sem_wait(&sync->game_state_mutex); 
         }
         
         sem_post(&sync->reader_count_mutex);
 
-        memcpy(my_board, game_state->board_p, sizeof(my_board)); // copia el tablero
+        memcpy(my_board, game_state->board_p, sizeof(my_board)); 
         my_x = game_state->players[player_id].x_coord;
         my_y = game_state->players[player_id].y_coord;
 
-
-        // libera semáforos
         sem_wait(&sync->reader_count_mutex);
         if (sync->readers_count-- == 1) {
             sem_post(&sync->game_state_mutex);
@@ -170,29 +157,20 @@ int main(int argc, const char *argv[]) {
 
         move = generate_move(width,height,my_board,my_x,my_y);
 
-        if(move == NONE || game_state->has_finished || game_state->players[player_id].is_blocked){ // estoy bloqueado
+        if(move == NONE || game_state->has_finished || game_state->players[player_id].is_blocked){ 
             break;
         }
 
-        //IF_EXIT(putchar(move) == EOF, "Error al escribir movimiento en stdout")
         IF_EXIT(write(STDOUT_FILENO, &move, sizeof(move)) == -1, "Error al escribir movimiento en stdout")
         mov_count++;
-        //fflush(stdout);
         
-        volatile game_t *volatile_game = game_state;
-        while(!volatile_game->has_finished && !volatile_game->players[player_id].is_blocked && 
-              volatile_game->players[player_id].valid_mov_request + volatile_game->players[player_id].invalid_mov_requests != mov_count){
-            usleep(1000); // Esperar un milisegundo
-        }
-        //usleep(2000000);
+
+        while(!game_state->has_finished && !game_state->players[player_id].is_blocked && 
+            game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
     }
-    // Limpieza
-    if (game_state != MAP_FAILED) {
-        munmap(game_state, sizeof(game_t));
-    }
-    if (sync != MAP_FAILED) {
-        munmap(sync, sizeof(game_sync));
-    }
+    
+    unmap_shm(game_state, sizeof(game_t) + sizeof(int)*(width*height));
+    unmap_shm(sync, sizeof(game_sync));
 
     return EXIT_SUCCESS;
     

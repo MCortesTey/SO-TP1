@@ -44,5 +44,7 @@ typedef struct {
 
 void* create_shm(char* name, size_t size, int mode);
 void* connect_shm(char* name, size_t size, int flags);
+void destroy_shm(void* ptr, size_t size, const char* name);
+void unmap_shm(void* ptr, size_t size);
 
 #endif // SHM_ADT_H 

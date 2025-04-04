@@ -22,7 +22,7 @@ void* create_shm(char *name, size_t size, int mode) {
     void *p = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     IF_EXIT(p == MAP_FAILED, "mmap");
 
-    close(fd);  // No necesitamos el descriptor después de mapear
+    close(fd); 
 
     return p;
 }
@@ -30,15 +30,27 @@ void* create_shm(char *name, size_t size, int mode) {
 void* connect_shm(char *name, size_t size, int flags) {
     IF_EXIT(!(flags == O_RDONLY || flags == O_RDWR), "Modo de apertura no permitido para la memoria compartida");
 
-    // Abrir la memoria
-    int shm_fd = shm_open(name, flags, 0); // Si la memoria ya existe (no se usa O_CREAT), los permisos definidos en "int mode" no se modifican
+    // open mem
+    int shm_fd = shm_open(name, flags, 0); // if shm already exists, open it
     IF_EXIT(shm_fd < 0, "Error al abrir la memoria compartida");
 
-    // Mapear la memoria compartida con el tamaño correcto
+    // mep shm to size
     void* return_ptr = mmap(0, size, (flags == O_RDWR) ? (PROT_READ | PROT_WRITE) : PROT_READ, MAP_SHARED, shm_fd, 0);
     IF_EXIT(return_ptr == MAP_FAILED, "Error al mapear la memoria compartida");
 
-    close(shm_fd); // Cerrar el descriptor de archivo después del mmap
+    close(shm_fd);
 
     return return_ptr;
 }
+
+void destroy_shm(void* ptr, size_t size, const char* name) {
+    IF_EXIT_NON_ZERO(munmap(ptr, size), "Error al desmapear la memoria compartida");
+    IF_EXIT_NON_ZERO(shm_unlink(name), "Error al eliminar la memoria compartida");
+}
+
+void unmap_shm(void* ptr, size_t size) {
+    if (ptr != MAP_FAILED) {
+        IF_EXIT(munmap(ptr, size) == -1, "Error al desmapear la memoria compartida");
+    }
+}
+    
