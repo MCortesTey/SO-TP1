@@ -190,8 +190,6 @@ typedef struct {
 
 } player_movement;
 
-
-
 player_movement recibir_movimientos(game_t * game, int pipes[MAX_PLAYER_NUMBER][2], int player_count, int timeout) {
     static int last_player = 0;  // Para mantener política round robin
     fd_set read_fds;
@@ -224,38 +222,36 @@ player_movement recibir_movimientos(game_t * game, int pipes[MAX_PLAYER_NUMBER][
 
     // Esperar por datos en los pipes
     int ready = select(max_fd + 1, &read_fds, NULL, NULL, &tv);
-    
     if (ready == -1) {
         IF_EXIT(true, "select")
     } else if (ready == 0) {
         // Timeout
         return (player_movement){-1, NONE};
-    }
-
-    // Verificar qué pipe tiene datos, siguiendo round robin
-    current_player = last_player;
-    for(int i = 0; i < player_count; i++) {
-        if (!game->players[current_player].is_blocked && 
-            FD_ISSET(pipes[current_player][READ_END], &read_fds)) {
-            
-            unsigned char move;
-            ssize_t bytes_read = read(pipes[current_player][READ_END], &move, sizeof(move));
-            
-            if (bytes_read == -1) {
-                IF_EXIT(true, "read")
-            } else if (bytes_read == 0) {
-                // EOF detectado - marcar jugador como bloqueado
-                game->players[current_player].is_blocked = true;
-            } else {
-                // Movimiento válido recibido
-                last_player = (current_player + 1) % player_count;
-                return (player_movement){current_player, move};
+    } else{
+        // Verificar qué pipe tiene datos, siguiendo round robin
+        
+        for(int i = 0; i < player_count; i++) {
+            current_player = (last_player + i) % player_count;
+            if (FD_ISSET(pipes[current_player][READ_END], &read_fds)) {
+                
+                unsigned char move;
+                ssize_t bytes_read = read(pipes[current_player][READ_END], &move, sizeof(move));
+                
+                if (bytes_read == -1) {
+                    IF_EXIT(true, "read")
+                } else if (bytes_read == 0) {
+                    // EOF detectado - marcar jugador como bloqueado
+                    game->players[current_player].is_blocked = true;
+                } else {
+                    // Movimiento recibido
+                    last_player = current_player;
+                    return (player_movement){current_player, move};
+                }
             }
         }
-        current_player = (current_player + 1) % player_count;
     }
 
-    // Si llegamos aquí, no se recibieron datos válidos
+    // Si llegamos aquí, no se recibieron datos
     return (player_movement){-1, NONE};
 }
 
@@ -269,6 +265,7 @@ bool procesar_movimiento(game_t * game, player_movement pm){
         game->players[pm.player_id].invalid_mov_requests++;
         return false;
     }
+
     int new_x = game->players[pm.player_id].x_coord + dx[pm.move];
     int new_y = game->players[pm.player_id].y_coord + dy[pm.move];
 
@@ -388,15 +385,17 @@ int main(int argc, char const *argv[]){
         }
     }
 
-    sem_post(&sync->master_access_mutex); // liberar el mutex para que los jugadores puedan leer el estado del juego
+    sleep(2); 
+    sem_post(&sync->master_access_mutex); // liberar el acceso al master
     // Bucle principal del master
     while (!game->has_finished) {
 
         // Leer movimientos de los jugadores
-        player_movement pm = recibir_movimientos(game,pipes, player_count, timeout);
+        player_movement pm = recibir_movimientos(game, pipes, player_count, timeout);
 
         sem_wait(&sync->master_access_mutex);
         sem_wait(&sync->game_state_mutex);
+        usleep(delay);
         sem_post(&sync->master_access_mutex);
 
         // Mover
@@ -404,9 +403,8 @@ int main(int argc, char const *argv[]){
 
         // Señalar al view que hay cambios para imprimir
         sem_post(&sync->print_needed);
-        
-        // Esperar a que el view termine de imprimir
         sem_wait(&sync->print_done);
+
         usleep(delay); // Esperar el delay
         sem_post(&sync->game_state_mutex);
         

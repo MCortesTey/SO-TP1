@@ -57,7 +57,7 @@ static inline unsigned char generate_move(int width, int height, const int board
 
 #ifdef RANDOM
 static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos){
-    int valid_moves[8] = {NONE};
+    int valid_moves[8] = {NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE};
     int num_valid_moves = 0;
 
     for (int i = UP; i <= UP_LEFT; i++) {
@@ -178,8 +178,12 @@ int main(int argc, const char *argv[]) {
         IF_EXIT(write(STDOUT_FILENO, &move, sizeof(move)) == -1, "Error al escribir movimiento en stdout")
         mov_count++;
         //fflush(stdout);
-         
-        while(!game_state->has_finished && !game_state->players[player_id].is_blocked && game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
+        
+        volatile game_t *volatile_game = game_state;
+        while(!volatile_game->has_finished && !volatile_game->players[player_id].is_blocked && 
+              volatile_game->players[player_id].valid_mov_request + volatile_game->players[player_id].invalid_mov_requests != mov_count){
+            usleep(1000); // Esperar un milisegundo
+        }
         //usleep(2000000);
     }
     // Limpieza

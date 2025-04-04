@@ -68,3 +68,4 @@ strace_out
 PVS-Studio.html
 *.log
 master
+.gdb_history
