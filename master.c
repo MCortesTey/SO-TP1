@@ -65,7 +65,7 @@ game_sync * create_game_sync(){
 
 
 
-game_t * create_game(int width, int height, int n_players, char * players[], int seed){
+game_t * create_game(unsigned int width, unsigned int height, unsigned int n_players, char * players[], unsigned int seed){
     game_t * game_t_ptr = create_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP); // 0644
     IF_EXIT_NULL(game_t_ptr,"Could not create game_state")
 
@@ -75,7 +75,7 @@ game_t * create_game(int width, int height, int n_players, char * players[], int
     game_t_ptr->has_finished = false;
 
     // init players
-    for(int i = 0; i < n_players; i++) {
+    for(unsigned int i = 0; i < n_players; i++) {
         strncpy(game_t_ptr->players[i].name, players[i], MAX_NAME_LEN - 1);
         game_t_ptr->players[i].score = 0;
         game_t_ptr->players[i].invalid_mov_requests = 0;
@@ -89,7 +89,7 @@ game_t * create_game(int width, int height, int n_players, char * players[], int
     // init board
 
     srand(seed);
-    for(int i = 0; i < width * height; i++) {
+    for(unsigned int i = 0; i < width * height; i++) {
         game_t_ptr->board_p[i] = rand_int(1, 9);
     }
 
@@ -97,10 +97,10 @@ game_t * create_game(int width, int height, int n_players, char * players[], int
     double angle_step = 2 * M_PI / n_players;
     double a = (width  * 0.75) / 2.0;  // semi-major axis
     double b = (height * 0.75) / 2.0; // semi-minor axis
-    double center_x = a;
-    double center_y = b;
+    double center_x = width / 2.0;
+    double center_y = height / 2.0;
 
-    for(int i = 0; i < n_players; i++) {
+    for(unsigned int i = 0; i < n_players; i++) {
         double angle = i * angle_step;
         int x_pos = (int)(center_x + a * cos(angle));
         int y_pos = (int)(center_y + b * sin(angle));
@@ -113,7 +113,7 @@ game_t * create_game(int width, int height, int n_players, char * players[], int
     return game_t_ptr;
 }
 
-void parse_arguments(int argc, char const *argv[], int *width, int *height, int *delay, int *timeout, int *seed, char **view_path, char **players, int *player_count) {
+void parse_arguments(int argc, char const *argv[], unsigned int *width, unsigned int *height, unsigned int *delay, unsigned int *timeout, unsigned int *seed, char **view_path, char **players, unsigned int *player_count) {
     
     // default values
     *width = DEFAULT_WIDTH;
@@ -130,22 +130,15 @@ void parse_arguments(int argc, char const *argv[], int *width, int *height, int 
         switch(c){
             case 'w':
                 *width = atoi(optarg);
-                IF_EXIT(*width == 0, "atoi width")
-                IF_EXIT(*width < DEFAULT_WIDTH, "width menor que la mínima")
                 break;
             case 'h':
                 *height = atoi(optarg);
-                IF_EXIT(*height == 0, "atoi height")
-                IF_EXIT(*height < DEFAULT_HEIGHT, "height menor que la mínima")
                 break;
             case 'd':
                 *delay = atoi(optarg);
-                IF_EXIT(*delay < 0, "delay menor que cero")
                 break;
             case 't':
                 *timeout = atoi(optarg);
-                IF_EXIT(*timeout == 0, "atoi timeout")
-                IF_EXIT(*timeout < 0, "timeout menor que cero")
                 break;
             case 's':
                 *seed = atoi(optarg);
@@ -163,7 +156,7 @@ void parse_arguments(int argc, char const *argv[], int *width, int *height, int 
                 break;
             }
             case '?': 
-                fprintf(stderr, "Usage: ./ChompChamps_arm64 [-w width] [-h height] [-d delay] [-s seed] [-v view] [-t timeout] -p player1 player2 ...\n");
+                fprintf(stderr, "Usage: ./ChompChamps [-w width] [-h height] [-d delay] [-s seed] [-v view] [-t timeout] -p player1 player2 ...\n");
                 exit(EXIT_FAILURE);
                 break;
             default:
@@ -179,7 +172,7 @@ typedef struct {
     enum MOVEMENTS move;
 } player_movement;
 
-player_movement get_move(game_t * game, int pipes[MAX_PLAYER_NUMBER][2], int player_count, int timeout) {
+player_movement get_move(game_t * game, int pipes[MAX_PLAYER_NUMBER][2], int player_count, unsigned int timeout) {
     static int last_player = 0;  // round robin!
     fd_set read_fds;
     int max_fd = -1;
@@ -294,9 +287,8 @@ bool process_move(game_t * game, player_movement player_mov){
 }
 
 int main(int argc, char const *argv[]){
-    int width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, delay = DEFAULT_DELAY, timeout = DEFAULT_TIMEOUT, seed = DEFAULT_SEED;
+    unsigned int width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, seed = DEFAULT_SEED, delay = DEFAULT_DELAY, timeout = DEFAULT_TIMEOUT, player_count = 0;
     char * view_path = DEFAULT_VIEW;
-    int player_count = 0;
     char *players[MAX_PLAYERS];
 
     parse_arguments(argc, argv, &width, &height, &delay, &timeout, &seed, &view_path, players, &player_count);
@@ -309,7 +301,7 @@ int main(int argc, char const *argv[]){
     
     // pipes for players
     int pipes[MAX_PLAYER_NUMBER][2];
-    for(int i = 0; i < player_count; i++){
+    for(unsigned int i = 0; i < player_count; i++){
         IF_EXIT_NON_ZERO(pipe(pipes[i]), "pipe player")
     }
 
@@ -327,7 +319,7 @@ int main(int argc, char const *argv[]){
         }
     }
 
-    for(int i = 0; i < player_count; i++){
+    for(unsigned int i = 0; i < player_count; i++){
         pid_t pid = fork();
         IF_EXIT(pid < 0, "fork player")
         if(pid == 0){ 
@@ -342,8 +334,19 @@ int main(int argc, char const *argv[]){
             IF_EXIT_NON_ZERO(close(pipes[i][WRITE_END]),"close unused pipe")
         }
     }
+    fflush(stdout);
+    if(view_path == NULL && delay != DEFAULT_DELAY){
+        puts("Info: Delay parameter ignored since there is no view.");
+    }
 
-    sleep(2); 
+    printf("width: %d\nheight: %d\ndelay: %d\ntimeout: %d\nseed: %d\nview: %s\nnum_players: %d\n",
+        width, height, delay, timeout, seed, view_path == NULL ? "-" : view_path, player_count);
+    for(unsigned int i = 0; i < player_count; i++){
+        printf("\t%s\n", players[i]);
+    }
+
+    sleep(3); 
+    fflush(stdout);
     sem_post(&sync->master_access_mutex); // start game
 
     while (!game->has_finished) {
@@ -355,14 +358,16 @@ int main(int argc, char const *argv[]){
 
         game->has_finished = process_move(game, player_mov);
 
-        // print board
-        sem_post(&sync->print_needed);
-        sem_wait(&sync->print_done);
+        if(view_path != NULL){
+            sem_wait(&sync->game_state_mutex);
+            sem_post(&sync->print_done);
+            usleep(delay*DELAY_MULTIPLIER); 
+        }
 
         sem_post(&sync->game_state_mutex);
         sem_post(&sync->master_access_mutex);
 
-        usleep(delay*DELAY_MULTIPLIER); 
+        
     }
 
     // wait for view to exit
@@ -375,7 +380,7 @@ int main(int argc, char const *argv[]){
     // wait for players to exit
     int remaining_players = player_count;
     while (remaining_players > 0) {
-        for(int i = 0; i < player_count; i++) {
+        for(unsigned int i = 0; i < player_count; i++) {
             if (game->players[i].pid != 0) {  
                 int status;
                 pid_t result = waitpid(game->players[i].pid, &status, WNOHANG);

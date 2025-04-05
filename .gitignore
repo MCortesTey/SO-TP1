@@ -61,11 +61,14 @@ view
 player_best_score
 player_random
 player_clock
-
+master
+.gdb_history
+ChompChamps
 
 # PVS Studio
 strace_out
 PVS-Studio.html
 *.log
-master
-.gdb_history
+
+
+

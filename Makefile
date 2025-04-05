@@ -1,9 +1,9 @@
 # This is a personal academic project. Dear PVS-Studio, please check it.
 # PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
-GCCFLAGS = -lm -Werror -Wall -g -Wextra  -fsanitize=address 
+GCCFLAGS = -lm -Werror -Wall -g -Wextra  -fsanitize=address
 CC = gcc 
-LDFLAGS = -lm -lrt -pthread -g  -fsanitize=address 
+LDFLAGS = -lm -lrt -pthread -g  -fsanitize=address
 
 # Object files
 OBJS = master.o player.o view.o shm_utils.o
@@ -17,7 +17,7 @@ all: master all_players view
 all_players: player_first_possible player_best_score player_random player_clock
 
 master: master.o shm_ADT.o # shm_utils.o
-	$(CC) master.o shm_ADT.o $(LDFLAGS) -o master
+	$(CC) master.o shm_ADT.o $(LDFLAGS) -o ChompChamps
 
 player_first_possible: player.o shm_ADT.o # shm_utils.o
 	$(CC) -o player_first_possible player.o shm_ADT.o $(LDFLAGS)
@@ -50,14 +50,14 @@ view: view.o shm_ADT.o # shm_utils.o
 	$(CC) $(GCCFLAGS) -c $<
 
 clean:
-	rm -rf *.o master player_first_possible player_random player_best_score player_clock view PVS-Studio.html *log strace_out
+	rm -rf *.o ChompChamps player_first_possible player_random player_best_score player_clock view PVS-Studio.html *log strace_out
 
 
 # Comandos para análisis
 analyze: clean
 	$(PVS_ANALYZER) trace -- make all
 	$(PVS_ANALYZER) analyze -o PVS-Studio.log
-	$(PVS_REPORT) -a GA:1,2 -t tasklist -o PVS-Studio.log PVS-Studio.log
+	$(PVS_REPORT) -a GA:1,2 -t fullhtml PVS-Studio.log -o PVS-Studio.html
 
 # Limpieza de archivos generados por PVS-Studio
 clean-pvs:
