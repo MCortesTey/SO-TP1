@@ -15,6 +15,7 @@
 #include "shm_ADT.h"
 
 
+
 static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos);
 
 #ifdef FIRST_POSSIBLE
