@@ -282,9 +282,7 @@ bool process_move(game_t * game, player_movement player_mov){
                 return false;
             }
         }
-        if(all_players_blocked){
-            return true;
-        }
+        return true; // all players blocked
     }
     return false;
 }
