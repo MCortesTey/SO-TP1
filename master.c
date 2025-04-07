@@ -31,7 +31,7 @@
 #define DEFAULT_TIMEOUT 10
 #define DEFAULT_SEED time(NULL)
 #define DEFAULT_VIEW NULL
-#define DELAY_MULTIPLIER 200
+#define DELAY_MULTIPLIER 350
 
 enum pipe_ends{READ_END, WRITE_END};
 
@@ -65,7 +65,7 @@ game_sync * create_game_sync(){
 
 
 
-game_t * create_game(unsigned int width, unsigned int height, unsigned int n_players, char * players[], unsigned int seed){
+game_t * create_game(unsigned short width, unsigned short height, unsigned int n_players, char * players[], unsigned int seed){
     game_t * game_t_ptr = create_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP); // 0644
     IF_EXIT_NULL(game_t_ptr,"Could not create game_state")
 
@@ -113,7 +113,7 @@ game_t * create_game(unsigned int width, unsigned int height, unsigned int n_pla
     return game_t_ptr;
 }
 
-void parse_arguments(int argc, char const *argv[], unsigned int *width, unsigned int *height, unsigned int *delay, unsigned int *timeout, unsigned int *seed, char **view_path, char **players, unsigned int *player_count) {
+void parse_arguments(int argc, char const *argv[], unsigned short *width, unsigned short *height, unsigned int *delay, unsigned int *timeout, unsigned int *seed, char **view_path, char **players, unsigned int *player_count) {
     
     // default values
     *width = DEFAULT_WIDTH;
@@ -238,6 +238,17 @@ player_movement get_move(game_t * game, int pipes[MAX_PLAYER_NUMBER][2], int pla
     return (player_movement){-1, NONE};
 }
 
+bool is_player_blocked(const int board[], int x, int y, int width, int height) {
+    for (int i = UP; i <= UP_LEFT; i++) {
+        int check_x = x + dx[i];
+        int check_y = y + dy[i];
+        if (check_x >= 0 && check_x < width && check_y >= 0 && check_y < height && board[check_y * width + check_x] > 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool process_move(game_t * game, player_movement player_mov){
     // player_id == -1 --> timeout
     if(player_mov.player_id == -1) { // Timeout
@@ -262,21 +273,13 @@ bool process_move(game_t * game, player_movement player_mov){
         game->board_p[new_y * game->board_width + new_x] = -1 * player_mov.player_id; 
     }
 
-    bool is_player_blocked = true;
-    for(int i = UP; i <= UP_LEFT; i++){
-        int check_x = game->players[player_mov.player_id].x_coord + dx[i];
-        int check_y = game->players[player_mov.player_id].y_coord + dy[i];
-        if(check_x >= 0 && check_x < game->board_width && check_y >= 0 && check_y < game->board_height && game->board_p[check_y * game->board_width + check_x] > 0){
-            is_player_blocked = false;
-            break;
-        }
-    }
+    bool player_blocked = is_player_blocked(game->board_p, game->players[player_mov.player_id].x_coord, game->players[player_mov.player_id].y_coord, game->board_width, game->board_height);
 
-    if(is_player_blocked){
+    if(player_blocked){
         game->players[player_mov.player_id].is_blocked = true;
         bool all_players_blocked = true;
         for(unsigned int i = 0; i < game->player_number; i++){
-            if(!game->players[i].is_blocked){
+            if(!(game->players[i].is_blocked = is_player_blocked(game->board_p, game->players[i].x_coord, game->players[i].y_coord, game->board_width, game->board_height))){
                 all_players_blocked = false;
                 break;
             }
@@ -289,7 +292,8 @@ bool process_move(game_t * game, player_movement player_mov){
 }
 
 int main(int argc, char const *argv[]){
-    unsigned int width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, seed = DEFAULT_SEED, delay = DEFAULT_DELAY, timeout = DEFAULT_TIMEOUT, player_count = 0;
+    unsigned short width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT;
+    unsigned int seed = DEFAULT_SEED, delay = DEFAULT_DELAY, timeout = DEFAULT_TIMEOUT, player_count = 0;
     char * view_path = DEFAULT_VIEW;
     char *players[MAX_PLAYERS];
 
@@ -297,6 +301,7 @@ int main(int argc, char const *argv[]){
 
     if(view_path == NULL && delay != DEFAULT_DELAY){
         puts("Info: Delay parameter ignored since there is no view.");
+        delay = DEFAULT_DELAY;
     }
 
     printf("width: %d\nheight: %d\ndelay: %d\ntimeout: %d\nseed: %d\nview: %s\nnum_players: %d\n",
@@ -366,8 +371,9 @@ int main(int argc, char const *argv[]){
         if(view_path != NULL){
             sem_post(&sync->print_needed);
             sem_wait(&sync->print_done);
-            usleep(delay*DELAY_MULTIPLIER);
         }
+
+        usleep(delay*DELAY_MULTIPLIER);
 
         sem_post(&sync->game_state_mutex);
     }
