@@ -125,7 +125,8 @@ int main(int argc, const char *argv[]) {
     
     IF_EXIT(player_id == game_state->player_number, "player could not identify itself")
 
-    int my_board[width*height];
+    int * my_board = malloc(sizeof(int) * width * height);
+    IF_EXIT_NULL(my_board, "Error al reservar memoria para el tablero")
 
     unsigned char move = NONE;
 
@@ -142,7 +143,7 @@ int main(int argc, const char *argv[]) {
         
         sem_post(&sync->reader_count_mutex);
 
-        memcpy(my_board, game_state->board_p, sizeof(my_board)); 
+        memcpy(my_board, game_state->board_p, sizeof(int) * width * height); 
         my_x = game_state->players[player_id].x_coord;
         my_y = game_state->players[player_id].y_coord;
 
@@ -172,7 +173,7 @@ int main(int argc, const char *argv[]) {
     
     unmap_shm(game_state, sizeof(game_t) + sizeof(int)*(width*height));
     unmap_shm(sync, sizeof(game_sync));
-
+    free(my_board);
     return EXIT_SUCCESS;
     
 }

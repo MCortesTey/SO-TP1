@@ -165,6 +165,10 @@ void parse_arguments(int argc, char const *argv[], unsigned int *width, unsigned
     }
 
     IF_EXIT(*player_count < MIN_PLAYER_NUMBER,"Error: At least one player must be specified using -p.")
+    if(*height < DEFAULT_HEIGHT || *width < DEFAULT_WIDTH){
+        fprintf(stderr, "Error: Minimal board dimensions: %dx%d. Given %dx%d\n", DEFAULT_WIDTH, DEFAULT_HEIGHT,*width, *height);
+        exit(EXIT_FAILURE);
+    }
 }
 
 typedef struct {
