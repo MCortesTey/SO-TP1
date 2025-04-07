@@ -104,11 +104,9 @@ int main(int argc, const char *argv[]) {
 
     int width = atoi(argv[1]);
     IF_EXIT(width <= 0, "ancho inválido")
-    fprintf(stderr,"width: %d\n", width);
 
     int height = atoi(argv[2]);
     IF_EXIT(height <= 0, "alto inválido")
-    fprintf(stderr,"height: %d\n", height);
 
     game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), O_RDONLY);
     game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), O_RDWR);

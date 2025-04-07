@@ -299,6 +299,7 @@ int main(int argc, char const *argv[]){
 
     parse_arguments(argc, argv, &width, &height, &delay, &timeout, &seed, &view_path, players, &player_count);
 
+    fflush(stdout);
     if(view_path == NULL && delay != DEFAULT_DELAY){
         puts("Info: Delay parameter ignored since there is no view.");
         delay = DEFAULT_DELAY;
