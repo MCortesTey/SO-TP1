@@ -315,8 +315,8 @@ int main(int argc, char const *argv[]){
     game_t * game = create_game(width, height, player_count, players, seed);
     game_sync* sync = create_game_sync();
     char board_dimensions[2][256];
-    sprintf(board_dimensions[0],"%d",height);
-    sprintf(board_dimensions[1],"%d",width);
+    sprintf(board_dimensions[0],"%d",width);
+    sprintf(board_dimensions[1],"%d",height);
 
     pid_t view_pid = 0;
     if(view_path != NULL){
