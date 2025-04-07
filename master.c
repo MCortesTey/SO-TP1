@@ -238,7 +238,7 @@ player_movement get_move(game_t * game, int pipes[MAX_PLAYER_NUMBER][2], int pla
     return (player_movement){-1, NONE};
 }
 
-bool is_player_blocked(const int board[], int x, int y, int width, int height) {
+static inline bool is_player_blocked(const int board[], int x, int y, int width, int height) {
     for (int i = UP; i <= UP_LEFT; i++) {
         int check_x = x + dx[i];
         int check_y = y + dy[i];
