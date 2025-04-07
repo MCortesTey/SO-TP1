@@ -178,9 +178,7 @@ player_movement get_move(game_t * game, int pipes[MAX_PLAYER_NUMBER][2], int pla
     int max_fd = -1;
 
     // timeout using struct
-    struct timeval tv;
-    tv.tv_sec = timeout;
-    tv.tv_usec = 0;
+    struct timeval tv = {timeout, 0};
 
     // init fd set
     FD_ZERO(&read_fds);
@@ -197,7 +195,7 @@ player_movement get_move(game_t * game, int pipes[MAX_PLAYER_NUMBER][2], int pla
         current_player = (current_player + 1) % player_count;
     }
 
-    // max_fd == 1 --> all blocked
+    // max_fd == -1 --> all blocked
     if (max_fd == -1) {
         return (player_movement){-1, NONE};
     }
@@ -293,17 +291,23 @@ int main(int argc, char const *argv[]){
 
     parse_arguments(argc, argv, &width, &height, &delay, &timeout, &seed, &view_path, players, &player_count);
 
+    if(view_path == NULL && delay != DEFAULT_DELAY){
+        puts("Info: Delay parameter ignored since there is no view.");
+    }
+
+    printf("width: %d\nheight: %d\ndelay: %d\ntimeout: %d\nseed: %d\nview: %s\nnum_players: %d\n",
+        width, height, delay, timeout, seed, view_path == NULL ? "-" : view_path, player_count);
+    for(unsigned int i = 0; i < player_count; i++){
+        printf("\t%s\n", players[i]);
+    }
+
+    sleep(3);
+
     game_t * game = create_game(width, height, player_count, players, seed);
     game_sync* sync = create_game_sync();
     char board_dimensions[2][256];
     sprintf(board_dimensions[0],"%d",height);
     sprintf(board_dimensions[1],"%d",width);
-    
-    // pipes for players
-    int pipes[MAX_PLAYER_NUMBER][2];
-    for(unsigned int i = 0; i < player_count; i++){
-        IF_EXIT_NON_ZERO(pipe(pipes[i]), "pipe player")
-    }
 
     pid_t view_pid = 0;
     if(view_path != NULL){
@@ -319,55 +323,49 @@ int main(int argc, char const *argv[]){
         }
     }
 
+    // pipes for players
+    int pipes[MAX_PLAYER_NUMBER][2];
+    for(unsigned int i = 0; i < player_count; i++){
+        IF_EXIT_NON_ZERO(pipe(pipes[i]), "pipe player")
+    }
+
     for(unsigned int i = 0; i < player_count; i++){
         pid_t pid = fork();
         IF_EXIT(pid < 0, "fork player")
         if(pid == 0){ 
-            IF_EXIT_NON_ZERO(close(STDOUT_FILENO), "close stdout")
-            IF_EXIT(dup(pipes[i][WRITE_END]) == -1, "dup") 
+            IF_EXIT(dup2(pipes[i][WRITE_END], STDOUT_FILENO) == 0, "dup2") // redirect stdout to pipe
+            for(unsigned int j = 0; j < player_count; j++){
+                IF_EXIT_NON_ZERO(close(pipes[j][READ_END]), "close unused player pipe (read) from player")
+                //if( j >= i) IF_EXIT_NON_ZERO(close(pipes[j][WRITE_END]), "close unused player pipe (write) from player")
+            }
             game->players[i].pid = getpid(); // set for player use
             char *player_args[] = {players[i], board_dimensions[0], board_dimensions[1], NULL};
             execv(players[i], player_args);
             IF_EXIT(true,"execv player") 
         } else if(pid > 0){ 
             // close unused pipe
-            IF_EXIT_NON_ZERO(close(pipes[i][WRITE_END]),"close unused pipe")
+            IF_EXIT_NON_ZERO(close(pipes[i][WRITE_END]),"close unused player pipe (write) from master")
         }
     }
-    fflush(stdout);
-    if(view_path == NULL && delay != DEFAULT_DELAY){
-        puts("Info: Delay parameter ignored since there is no view.");
-    }
 
-    printf("width: %d\nheight: %d\ndelay: %d\ntimeout: %d\nseed: %d\nview: %s\nnum_players: %d\n",
-        width, height, delay, timeout, seed, view_path == NULL ? "-" : view_path, player_count);
-    for(unsigned int i = 0; i < player_count; i++){
-        printf("\t%s\n", players[i]);
-    }
-
-    sleep(3); 
-    fflush(stdout);
     sem_post(&sync->master_access_mutex); // start game
 
     while (!game->has_finished) {
-
         player_movement player_mov = get_move(game, pipes, player_count, timeout);
 
         sem_wait(&sync->master_access_mutex);
         sem_wait(&sync->game_state_mutex);
+        sem_post(&sync->master_access_mutex);
 
         game->has_finished = process_move(game, player_mov);
 
         if(view_path != NULL){
-            sem_wait(&sync->game_state_mutex);
-            sem_post(&sync->print_done);
-            usleep(delay*DELAY_MULTIPLIER); 
+            sem_post(&sync->print_needed);
+            sem_wait(&sync->print_done);
+            usleep(delay*DELAY_MULTIPLIER);
         }
 
         sem_post(&sync->game_state_mutex);
-        sem_post(&sync->master_access_mutex);
-
-        
     }
 
     // wait for view to exit
