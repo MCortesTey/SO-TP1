@@ -14,7 +14,7 @@ PVS_REPORT = plog-converter
 
 all: master all_players view
 
-all_players: player_first_possible player_best_score player_random player_clock
+all_players: player_first_possible player_best_score player_random player_clock player_killer
 
 master: master.o shm_ADT.o 
 	$(CC) master.o shm_ADT.o $(LDFLAGS) -o ChompChamps
@@ -43,6 +43,12 @@ player_clock: player_clock.o shm_ADT.o
 player_clock.o: player.c constants.h shm_ADT.h  
 	$(CC) $(GCCFLAGS) -DCLOCK -c player.c -o player_clock.o
 
+player_killer: player_killer.o shm_ADT.o 
+	$(CC) -o player_killer player_killer.o shm_ADT.o $(LDFLAGS)
+
+player_killer.o: player.c constants.h shm_ADT.h  
+	$(CC) $(GCCFLAGS) -DCLOCK -c player.c -o player_killer.o
+
 view: view.o shm_ADT.o 
 	$(CC) -o view view.o shm_ADT.o $(LDFLAGS)
 
@@ -50,7 +56,7 @@ view: view.o shm_ADT.o
 	$(CC) $(GCCFLAGS) -c $<
 
 clean:
-	rm -rf *.o ChompChamps player_first_possible player_random player_best_score player_clock view PVS-Studio.html *log strace_out
+	rm -rf *.o ChompChamps player_first_possible player_random player_best_score player_killer player_clock view PVS-Studio.html *log strace_out
 
 
 # Comandos para análisis

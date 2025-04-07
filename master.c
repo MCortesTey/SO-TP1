@@ -277,11 +277,9 @@ bool process_move(game_t * game, player_movement player_mov){
 
     if(player_blocked){
         game->players[player_mov.player_id].is_blocked = true;
-        bool all_players_blocked = true;
         for(unsigned int i = 0; i < game->player_number; i++){
             if(!(game->players[i].is_blocked = is_player_blocked(game->board_p, game->players[i].x_coord, game->players[i].y_coord, game->board_width, game->board_height))){
-                all_players_blocked = false;
-                break;
+                return false;
             }
         }
         if(all_players_blocked){
