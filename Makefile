@@ -14,7 +14,7 @@ PVS_REPORT = plog-converter
 
 all: master all_players view
 
-all_players: player_first_possible player_best_score player_random player_clock player_cautious
+all_players: player_first_possible player_best_score player_random player_clock
 
 master: master.o shm_ADT.o 
 	$(CC) master.o shm_ADT.o $(LDFLAGS) -o ChompChamps
