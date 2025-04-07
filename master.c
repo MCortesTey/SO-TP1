@@ -336,7 +336,7 @@ int main(int argc, char const *argv[]){
             IF_EXIT(dup2(pipes[i][WRITE_END], STDOUT_FILENO) == 0, "dup2") // redirect stdout to pipe
             for(unsigned int j = 0; j < player_count; j++){
                 IF_EXIT_NON_ZERO(close(pipes[j][READ_END]), "close unused player pipe (read) from player")
-                //if( j >= i) IF_EXIT_NON_ZERO(close(pipes[j][WRITE_END]), "close unused player pipe (write) from player")
+                if( j >= i ) IF_EXIT_NON_ZERO(close(pipes[j][WRITE_END]), "close unused player pipe (write) from player")
             }
             game->players[i].pid = getpid(); // set for player use
             char *player_args[] = {players[i], board_dimensions[0], board_dimensions[1], NULL};
