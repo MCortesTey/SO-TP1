@@ -31,7 +31,7 @@
 #define DEFAULT_TIMEOUT 10
 #define DEFAULT_SEED time(NULL)
 #define DEFAULT_VIEW NULL
-#define DELAY_MULTIPLIER 350
+#define DELAY_MULTIPLIER 1000
 
 enum pipe_ends{READ_END, WRITE_END};
 
