@@ -13,6 +13,7 @@
 #include "constants.h"
 #include "macros.h"
 #include "shm_ADT.h"
+#include "sems.h"
 
 
 
@@ -236,33 +237,44 @@ int main(int argc, const char *argv[]) {
     
     IF_EXIT(player_id == game_state->player_number, "player could not identify itself")
 
-    int * my_board = malloc(sizeof(int) * width * height);
+    int my_board[height * width];
     IF_EXIT_NULL(my_board, "Error al reservar memoria para el tablero")
 
     unsigned char move = NONE;
 
     while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
         int my_x, my_y;
-        sem_wait(&sync->master_access_mutex); 
-        sem_post(&sync->master_access_mutex);
+
+        wait_shared_sem(&sync->master_access_mutex);
+        //sem_wait(&sync->master_access_mutex); 
+
+        post_shared_sem(&sync->master_access_mutex);
+        //sem_post(&sync->master_access_mutex);
         
-        sem_wait(&sync->reader_count_mutex); 
+        wait_shared_sem(&sync->reader_count_mutex);
+        //sem_wait(&sync->reader_count_mutex); 
         sync->readers_count++; 
         if (sync->readers_count == 1) { 
-            sem_wait(&sync->game_state_mutex); 
+            wait_shared_sem(&sync->game_state_mutex);
+            //sem_wait(&sync->game_state_mutex); 
         }
         
-        sem_post(&sync->reader_count_mutex);
+        
+        post_shared_sem(&sync->reader_count_mutex);
+        //sem_post(&sync->reader_count_mutex);
 
         memcpy(my_board, game_state->board_p, sizeof(int) * width * height); 
         my_x = game_state->players[player_id].x_coord;
         my_y = game_state->players[player_id].y_coord;
 
-        sem_wait(&sync->reader_count_mutex);
+        wait_shared_sem(&sync->reader_count_mutex);
+        //sem_wait(&sync->reader_count_mutex);
         if (sync->readers_count-- == 1) {
-            sem_post(&sync->game_state_mutex);
+            post_shared_sem(&sync->game_state_mutex);
+            //sem_post(&sync->game_state_mutex);
         }
-        sem_post(&sync->reader_count_mutex);
+        post_shared_sem(&sync->reader_count_mutex);
+        //sem_post(&sync->reader_count_mutex);
 
         if(game_state->has_finished || game_state->players[player_id].is_blocked){
             break;
@@ -284,7 +296,7 @@ int main(int argc, const char *argv[]) {
     
     unmap_shm(game_state, sizeof(game_t) + sizeof(int)*(width*height));
     unmap_shm(sync, sizeof(game_sync));
-    free(my_board);
+    //free(my_board);
     return EXIT_SUCCESS;
     
 }

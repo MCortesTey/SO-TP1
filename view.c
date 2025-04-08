@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include "constants.h"
 #include "shm_ADT.h"
+#include "sems.h"
 
 
 #define CLEAR_SCREEN printf("\033[2J\033[H")
@@ -156,9 +157,11 @@ int main(int argc, const char *argv[] ){
     game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), O_RDONLY);
 
     while (!game_state->has_finished) {
-        sem_wait(&sync->print_needed);
+        wait_shared_sem(&sync->print_needed);
+        //sem_wait(&sync->print_needed);
         print_board(game_state);
-        sem_post(&sync->print_done);
+        post_shared_sem(&sync->print_done);
+        //sem_post(&sync->print_done);
     }
 
     unmap_shm(sync, sizeof(game_sync));

@@ -54,13 +54,9 @@ dkms.conf
 *.sh
 /.vscode
 .bash_history
-player_sparse
-player_first_possible
 view
 .lesshst
-player_best_score
-player_random
-player_clock
+player_*
 master
 .gdb_history
 ChompChamps
