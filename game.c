@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 
 int rand_int(int min, int max) {
     return (rand() % (max - min + 1)) + min;
@@ -150,7 +151,7 @@ static inline bool is_player_blocked(const int board[], int x, int y, int width,
     return true;
 }
 
-bool process_move(game_t * game, player_movement player_mov){
+bool process_move(game_t * game, player_movement player_mov, time_t* last_valid_mov_time){
     // player_id == -1 --> timeout
     if(player_mov.player_id == -1) { // Timeout
         return true;
@@ -167,6 +168,7 @@ bool process_move(game_t * game, player_movement player_mov){
     if(new_x < 0 || new_x >= game->board_width || new_y < 0 || new_y >= game->board_height || game->board_p[new_y * game->board_width + new_x] <= 0) { // Invalid move
         game->players[player_mov.player_id].invalid_mov_requests++;
     } else {
+        *last_valid_mov_time = time(NULL);
         game->players[player_mov.player_id].valid_mov_request++;
         game->players[player_mov.player_id].x_coord = new_x;
         game->players[player_mov.player_id].y_coord = new_y; 

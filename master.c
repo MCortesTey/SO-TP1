@@ -28,6 +28,8 @@
 #include "game.h"
 #include "sems.h"
 
+
+
 void parse_arguments(int argc, char const *argv[], unsigned short *width, unsigned short *height, unsigned int *delay, unsigned int *timeout, unsigned int *seed, char **view_path, char **players, unsigned int *player_count) {
     
     // default values
@@ -91,6 +93,7 @@ int main(int argc, char const *argv[]){
     unsigned int seed = DEFAULT_SEED, delay = DEFAULT_DELAY, timeout = DEFAULT_TIMEOUT, player_count = 0;
     char * view_path = DEFAULT_VIEW;
     char *players[MAX_PLAYERS];
+    time_t last_valid_mov_time = time(NULL);
 
     parse_arguments(argc, argv, &width, &height, &delay, &timeout, &seed, &view_path, players, &player_count);
 
@@ -138,6 +141,11 @@ int main(int argc, char const *argv[]){
     while (!game->has_finished) {
         player_movement player_mov = get_move(game, pipes, player_count, timeout);
 
+        if(time(NULL) - last_valid_mov_time >= timeout){
+            game->has_finished = true;
+            break;
+        }
+
         wait_shared_sem(&sync->master_access_mutex);
         //sem_wait(&sync->master_access_mutex);
 
@@ -147,7 +155,7 @@ int main(int argc, char const *argv[]){
         post_shared_sem(&sync->master_access_mutex);
         //sem_post(&sync->master_access_mutex);
 
-        game->has_finished = process_move(game, player_mov);
+        game->has_finished = process_move(game, player_mov, &last_valid_mov_time);
 
         if(view_path != NULL){
             post_shared_sem(&sync->print_needed);
