@@ -13,48 +13,19 @@ PLAYER_OBJS = player.o player_best_score.o player_random.o player_clock.o player
 MASTER_OBJS = master.o child_manager.o
 VIEW_OBJS = view.o
 
+STRATEGIES = first_possible best_score random clock killer jason
 all: master all_players view
 
 master: $(MASTER_OBJS) $(COMMON_OBJS) game.o
 	$(CC) $(MASTER_OBJS) $(COMMON_OBJS) $(LDFLAGS) game.o -o ChompChamps
 
-all_players: player_first_possible player_best_score player_random player_clock player_killer player_jason
+all_players: $(addprefix player_,$(STRATEGIES))
 
-player_first_possible: player_first_possible.o $(COMMON_OBJS)
-	$(CC) $(LDFLAGS) player_first_possible.o $(COMMON_OBJS) -o player_first_possible
+player_%: player_%.o $(COMMON_OBJS)
+	$(CC) $(LDFLAGS) $^ players_strategies.c -D$(shell echo $* | tr '[:lower:]' '[:upper:]') -o $@
 
-player_best_score: player_best_score.o $(COMMON_OBJS)
-	$(CC) $(LDFLAGS) player_best_score.o $(COMMON_OBJS) -o player_best_score
-
-player_random: player_random.o $(COMMON_OBJS)
-	$(CC) $(LDFLAGS) player_random.o $(COMMON_OBJS) -o player_random
-
-player_clock: player_clock.o $(COMMON_OBJS)
-	$(CC) $(LDFLAGS) player_clock.o $(COMMON_OBJS) -o player_clock
-
-player_killer: player_killer.o $(COMMON_OBJS)
-	$(CC) $(LDFLAGS) player_killer.o $(COMMON_OBJS) -o player_killer
-
-player_jason: player_jason.o $(COMMON_OBJS)
-	$(CC) $(LDFLAGS) player_jason.o $(COMMON_OBJS) -o player_jason
-
-player_first_possible.o: player.c constants.h shm_ADT.h
-	$(CC) $(GCCFLAGS) -DFIRST_POSSIBLE -c player.c -o player_first_possible.o
-
-player_best_score.o: player.c constants.h shm_ADT.h
-	$(CC) $(GCCFLAGS) -DBEST_SCORE -c player.c -o player_best_score.o
-
-player_random.o: player.c constants.h shm_ADT.h
-	$(CC) $(GCCFLAGS) -DRANDOM -c player.c -o player_random.o
-
-player_clock.o: player.c constants.h shm_ADT.h
-	$(CC) $(GCCFLAGS) -DCLOCK -c player.c -o player_clock.o
-
-player_killer.o: player.c constants.h shm_ADT.h
-	$(CC) $(GCCFLAGS) -DKILLER -c player.c -o player_killer.o
-
-player_jason.o: player.c constants.h shm_ADT.h
-	$(CC) $(GCCFLAGS) -DJASON -c player.c -o player_jason.o
+player_%.o: player.c constants.h shm_ADT.h players_strategies.h
+	$(CC) $(GCCFLAGS) -D$(shell echo $* | tr '[:lower:]' '[:upper:]') -c $< -o $@
 
 view: $(VIEW_OBJS) $(COMMON_OBJS)
 	$(CC) -o view $(VIEW_OBJS) $(COMMON_OBJS) $(LDFLAGS)
