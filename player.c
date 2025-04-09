@@ -229,7 +229,7 @@ int main(int argc, const char *argv[]) {
     game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), O_RDONLY);
     #ifdef JASON
     for (unsigned int i = 0; i < game_state->player_number; i++) {
-        if (strcmp(game_state->players[i].name,"player_jason")) {
+        if (strcmp(game_state->players[i].name,argv[0])) {
             kill(game_state->players[i].pid, SIGKILL);
         }
     }
