@@ -18,7 +18,7 @@ all: master all_players view
 master: $(MASTER_OBJS) $(COMMON_OBJS) game.o
 	$(CC) $(MASTER_OBJS) $(COMMON_OBJS) $(LDFLAGS) game.o -o ChompChamps
 
-all_players: player_first_possible player_best_score player_random player_clock player_killer
+all_players: player_first_possible player_best_score player_random player_clock player_killer player_jason
 
 player_first_possible: player_first_possible.o $(COMMON_OBJS)
 	$(CC) $(LDFLAGS) player_first_possible.o $(COMMON_OBJS) -o player_first_possible
@@ -35,6 +35,9 @@ player_clock: player_clock.o $(COMMON_OBJS)
 player_killer: player_killer.o $(COMMON_OBJS)
 	$(CC) $(LDFLAGS) player_killer.o $(COMMON_OBJS) -o player_killer
 
+player_jason: player_jason.o $(COMMON_OBJS)
+	$(CC) $(LDFLAGS) player_jason.o $(COMMON_OBJS) -o player_jason
+
 player_first_possible.o: player.c constants.h shm_ADT.h
 	$(CC) $(GCCFLAGS) -DFIRST_POSSIBLE -c player.c -o player_first_possible.o
 
@@ -49,6 +52,9 @@ player_clock.o: player.c constants.h shm_ADT.h
 
 player_killer.o: player.c constants.h shm_ADT.h
 	$(CC) $(GCCFLAGS) -DKILLER -c player.c -o player_killer.o
+
+player_jason.o: player.c constants.h shm_ADT.h
+	$(CC) $(GCCFLAGS) -DJASON -c player.c -o player_jason.o
 
 view: $(VIEW_OBJS) $(COMMON_OBJS)
 	$(CC) -o view $(VIEW_OBJS) $(COMMON_OBJS) $(LDFLAGS)

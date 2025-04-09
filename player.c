@@ -15,7 +15,11 @@
 #include "shm_ADT.h"
 #include "sems.h"
 
-
+#ifdef JASON
+#include <sys/types.h>
+#include <signal.h>
+#define FIRST_POSSIBLE
+#endif
 
 static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos);
 
@@ -212,6 +216,8 @@ int main(int argc, const char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+
+
     size_t mov_count = 0;
 
     int width = atoi(argv[1]);
@@ -221,6 +227,13 @@ int main(int argc, const char *argv[]) {
     IF_EXIT(height <= 0, "alto inválido")
 
     game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), O_RDONLY);
+    #ifdef JASON
+    for (unsigned int i = 0; i < game_state->player_number; i++) {
+        if (strcmp(game_state->players[i].name,"player_jason")) {
+            kill(game_state->players[i].pid, SIGKILL);
+        }
+    }
+    #endif
     game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), O_RDWR);
 
     unsigned int player_id = 0; 
@@ -230,7 +243,7 @@ int main(int argc, const char *argv[]) {
 
     for (player_id = 0; player_id < game_state->player_number; player_id++){
         if(game_state->players[player_id].pid == my_pid){
-            printf("Soy el jugador %d\n", player_id);
+            //printf("Soy el jugador %d\n", player_id);
             break;
         }
     }
@@ -241,6 +254,8 @@ int main(int argc, const char *argv[]) {
     IF_EXIT_NULL(my_board, "Error al reservar memoria para el tablero")
 
     unsigned char move = NONE;
+
+
 
     while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
         int my_x, my_y;
