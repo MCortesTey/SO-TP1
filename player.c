@@ -18,7 +18,7 @@
 #ifdef JASON
 #include <sys/types.h>
 #include <signal.h>
-#define FIRST_POSSIBLE
+#define BEST_SCORE
 #endif
 
 static inline unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos);
@@ -227,13 +227,6 @@ int main(int argc, const char *argv[]) {
     IF_EXIT(height <= 0, "alto inválido")
 
     game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), O_RDONLY);
-    #ifdef JASON
-    for (unsigned int i = 0; i < game_state->player_number; i++) {
-        if (strcmp(game_state->players[i].name,argv[0])) {
-            kill(game_state->players[i].pid, SIGKILL);
-        }
-    }
-    #endif
     game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), O_RDWR);
 
     unsigned int player_id = 0; 
@@ -258,6 +251,13 @@ int main(int argc, const char *argv[]) {
 
 
     while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
+        #ifdef JASON
+        static int count = 0;
+        if (count < (int) game_state->player_number && strcmp(game_state->players[count].name,argv[0])) {
+            kill(game_state->players[count].pid, SIGKILL);
+        }
+        count++;
+        #endif
         int my_x, my_y;
 
         wait_shared_sem(&sync->master_access_mutex);
