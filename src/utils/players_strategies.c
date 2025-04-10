@@ -198,6 +198,11 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
 #ifdef ERROR
 
 unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos){
+    (void)width;    // Parámetros marcados como no usados para que no rompa el -Werror
+    (void)height;
+    (void)board;
+    (void)x_pos;
+    (void)y_pos;
     return 0;
 }
 
