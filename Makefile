@@ -13,7 +13,7 @@ PLAYER_OBJS = player.o player_best_score.o player_random.o player_clock.o player
 MASTER_OBJS = master.o child_manager.o
 VIEW_OBJS = view.o
 
-STRATEGIES = first_possible best_score random clock killer jason
+STRATEGIES = first_possible best_score random clock killer jason error
 all: master all_players view
 
 master: $(MASTER_OBJS) $(COMMON_OBJS) game.o

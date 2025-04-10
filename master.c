@@ -142,7 +142,7 @@ int main(int argc, char const *argv[]){
         player_movement player_mov = get_move(game, pipes, player_count, timeout);
 
         if(time(NULL) - last_valid_mov_time >= timeout){
-            game->has_finished = true;
+            //game->has_finished = true;
             break;
         }
 

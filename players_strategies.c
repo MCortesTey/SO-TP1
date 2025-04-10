@@ -194,3 +194,11 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
     return movements[j];
 }
 #endif
+
+#ifdef ERROR
+
+unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos){
+    return 0;
+}
+
+#endif
