@@ -7,18 +7,43 @@
 #include <stdbool.h>
 #include <sys/wait.h>
 
+
+
 pid_t new_child(char *executable_path, char *args[], int write_fd, int read_fd, int fork_num, int forks[][2]){
     pid_t pid = fork();
-    IF_EXIT(pid < 0, "fork child")
+    if(pid == -1){
+        perror("fork");
+        return -1;
+    }
     if(pid == 0){ 
-        if(write_fd != -1){ IF_EXIT(dup2(write_fd, STDOUT_FILENO) == -1, "dup2") } // redirect stdout to pipe
-        if(read_fd != -1) { IF_EXIT(dup2(read_fd, STDIN_FILENO) == -1, "dup2") } // redirect stdin to pipe 
-        if(write_fd != -1) close(write_fd);
-        if(read_fd != -1) close(read_fd);
+        if(write_fd != -1 && (dup2(write_fd, STDOUT_FILENO) == -1)){ 
+            perror("dup2");
+            return -1;
+        }
+        if(read_fd != -1 && (dup2(read_fd, STDIN_FILENO) == -1)) { 
+            perror("dup2");
+            return -1;
+        } 
 
-        // Validate executable_path and args
-        IF_EXIT(access(executable_path, X_OK) == -1, "Invalid executable path")
-        IF_EXIT(args == NULL || args[0] == NULL, "Invalid args for execv")
+        if(write_fd != -1 && close(write_fd) != 0){ 
+            perror("close");
+            return -1;
+        }
+        if(read_fd != -1 && close(read_fd) != 0){ 
+            perror("close");
+            return -1;
+        }
+
+        if(access(executable_path, X_OK) == -1){
+            perror("access");
+            return -1;
+        }
+
+        if(args == NULL || args[0] == NULL){
+            perror("execv");
+            return -1;
+        }
+
         for(int i = 0; i < fork_num && forks != NULL; i++){
             if(forks[i][READ_END] != read_fd && forks[i][READ_END] != write_fd) close(forks[i][READ_END]); // close unused read ends
             if(forks[i][WRITE_END] != read_fd && forks[i][WRITE_END] != write_fd) close(forks[i][WRITE_END]); // close unused write ends
