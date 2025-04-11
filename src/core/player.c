@@ -48,16 +48,16 @@ int main(int argc, const char *argv[]) {
         }
     }
     
-    IF_EXIT(player_id == game_state->player_number, "player could not identify itself")
+    bool player_exit = false;
+
+    player_exit = player_id == game_state->player_number;
+    fprintf(stderr, "El player %s no se pudo identificar", argv[0]);
 
     int my_board[height * width];
-    IF_EXIT_NULL(my_board, "Error al reservar memoria para el tablero")
 
     unsigned char move = NONE;
 
-
-
-    while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
+    while (!player_exit) {
         #ifdef JASON
         static int count = 0;
         if (count < (int) game_state->player_number && strcmp(game_state->players[count].name,argv[0])) {
@@ -85,40 +85,40 @@ int main(int argc, const char *argv[]) {
         post_shared_sem(&sync->reader_count_mutex);
         //sem_post(&sync->reader_count_mutex);
 
+        if(game_state->has_finished || game_state->players[player_id].is_blocked){
+            break;
+        }
+
         memcpy(my_board, game_state->board_p, sizeof(int) * width * height); 
         my_x = game_state->players[player_id].x_coord;
         my_y = game_state->players[player_id].y_coord;
 
         wait_shared_sem(&sync->reader_count_mutex);
-        //sem_wait(&sync->reader_count_mutex);
         if (sync->readers_count-- == 1) {
             post_shared_sem(&sync->game_state_mutex);
-            //sem_post(&sync->game_state_mutex);
         }
         post_shared_sem(&sync->reader_count_mutex);
-        //sem_post(&sync->reader_count_mutex);
-
-        if(game_state->has_finished || game_state->players[player_id].is_blocked){
-            break;
-        }
 
         move = generate_move(width,height,my_board,my_x,my_y);
 
-        if(move == NONE || game_state->has_finished || game_state->players[player_id].is_blocked){ 
+        if(move == NONE){ 
             break;
         }
 
-        IF_EXIT(write(STDOUT_FILENO, &move, sizeof(move)) == -1, "Error al escribir movimiento en stdout")
+        player_exit = write(STDOUT_FILENO, &move, sizeof(move)) == -1;
+        if(player_exit){
+            perror("Error al escribir movimiento en stdout");
+            break;
+        }
         mov_count++;
-        
 
-        while(!game_state->has_finished && !game_state->players[player_id].is_blocked && 
+        while(!player_exit && !game_state->has_finished && !game_state->players[player_id].is_blocked && 
             game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
     }
     
     unmap_shm(game_state, sizeof(game_t) + sizeof(int)*(width*height));
     unmap_shm(sync, sizeof(game_sync));
-    //free(my_board);
-    return EXIT_SUCCESS;
+
+    return player_exit ? EXIT_FAILURE : EXIT_SUCCESS;
     
 }
