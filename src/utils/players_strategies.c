@@ -187,7 +187,7 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
         int nx = x_pos + dx[movements[j]];
         int ny = y_pos + dy[movements[j]];
         if (nx >= 0 && nx < width && ny >= 0 && ny < height && board[ny * width + nx] > 0) {
-            break; // es un movimiento válido
+            break; // mov válido
         }
         j++;
     }

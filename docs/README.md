@@ -1,6 +1,6 @@
 # TP1 - Sistemas Operativos (72.11) - ChompChamps
 
-Este proyecto forma parte de la asignatura 72.11 - Sistemas Operativos, y consiste en la implementación de un juego de estrategia llamado ChompChamps. El juego permite enfrentar diferentes tipos de jugadores (IA) en un tablero de Chomp, implementando un sistema de comunicación entre procesos mediante memoria compartida y semáforos. 
+Este proyecto forma parte de la asignatura 72.11 - Sistemas Operativos, y consiste en la implementación de un juego de estrategia llamado ChompChamps. El juego permite enfrentar diferentes tipos de jugadores en un tablero rectangular, implementando un sistema de comunicación entre procesos mediante memoria compartida y semáforos. 
 
 ## Instrucciones de Compilación y Ejecución
 
@@ -13,11 +13,6 @@ Sigue los pasos a continuación para compilar y ejecutar el proyecto correctamen
 make all
 ```
 3. Para ejectutar el proyecto utiliza:
-
-#### Ejecución con el master provisto por la cátedra
-```bash
-./ChompChamps_amd64 [parámetros]
-```
 
 #### Ejecución con nuestro master
 ```bash
@@ -44,7 +39,7 @@ Los parámetros entre corchetes son opcionales y tienen un valor por defecto:
 - `player_clock`: Se mueve en sentido de las agujas del reloj
 - `player_killer`: Estrategia agresiva
 - `player_jason`: Estrategia especial
-
+- `player_jason`
 
 ## Compilación
 

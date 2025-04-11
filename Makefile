@@ -47,11 +47,9 @@ $(UTILS_DIR)/%.o: $(UTILS_DIR)/%.c include/constants.h include/macros.h
 $(PROCESS_DIR)/child_manager.o: $(PROCESS_DIR)/child_manager.c include/constants.h include/shm_ADT.h
 	$(CC) $(GCCFLAGS) -c $< -o $@
 
-# Regla genérica para compilar archivos .c en src/core/
 $(CORE_DIR)/%.o: $(CORE_DIR)/%.c
 	$(CC) $(GCCFLAGS) -c $< -o $@
 
-# Agregar regla para compilar players_strategies.o
 $(UTILS_DIR)/players_strategies_%.o: $(UTILS_DIR)/players_strategies.c include/constants.h include/players_strategies.h
 	$(CC) $(GCCFLAGS) -D$(shell echo $* | tr '[:lower:]' '[:upper:]') -c $< -o $@
 

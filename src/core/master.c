@@ -121,7 +121,7 @@ int main(int argc, char const *argv[]){
 
     pid_t view_pid;
     if(view_path != NULL){
-        view_pid = new_child(view_path, arguments, -1, -1); 
+        view_pid = new_child(view_path, arguments, -1, -1, -1, NULL); 
     }
 
     // pipes for players
@@ -132,7 +132,7 @@ int main(int argc, char const *argv[]){
 
     for(unsigned int i = 0; i < player_count; i++){
         arguments[0] = players[i];
-        game->players[i].pid = new_child(players[i], arguments, pipes[i][WRITE_END], -1);
+        game->players[i].pid = new_child(players[i], arguments, pipes[i][WRITE_END], -1, player_count, pipes); // write end
     }
 
     post_shared_sem(&sync->master_access_mutex); // start game
