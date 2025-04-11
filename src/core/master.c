@@ -220,5 +220,5 @@ int main(int argc, char const *argv[]){
     destroy_shm(game, sizeof(game_t) + sizeof(int)*(width*height), SHM_GAME_PATH);
     destroy_shm(sync, sizeof(game_sync), SHM_GAME_SEMS_PATH);
 
-    return 0;
+    return EXIT_SUCCESS;
 }

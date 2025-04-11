@@ -13,35 +13,35 @@ pid_t new_child(char *executable_path, char *args[], int write_fd, int read_fd, 
     pid_t pid = fork();
     if(pid == -1){
         perror("fork");
-        return -1;
+        return EXIT_FAILURE;
     }
     if(pid == 0){ 
         if(write_fd != -1 && (dup2(write_fd, STDOUT_FILENO) == -1)){ 
             perror("dup2");
-            return -1;
+            return EXIT_FAILURE;
         }
         if(read_fd != -1 && (dup2(read_fd, STDIN_FILENO) == -1)) { 
             perror("dup2");
-            return -1;
+            return EXIT_FAILURE;
         } 
 
         if(write_fd != -1 && close(write_fd) != 0){ 
             perror("close");
-            return -1;
+            return EXIT_FAILURE;
         }
         if(read_fd != -1 && close(read_fd) != 0){ 
             perror("close");
-            return -1;
+            return EXIT_FAILURE;
         }
 
         if(access(executable_path, X_OK) == -1){
             perror("access");
-            return -1;
+            return EXIT_FAILURE;
         }
 
         if(args == NULL || args[0] == NULL){
             perror("execv");
-            return -1;
+            return EXIT_FAILURE;
         }
 
         for(int i = 0; i < fork_num && forks != NULL; i++){

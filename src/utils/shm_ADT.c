@@ -15,42 +15,72 @@
 
 void* create_shm(char *name, size_t size, int mode) {
     int fd = shm_open(name, O_RDWR | O_CREAT, mode);
-    IF_EXIT(fd == -1, "shm_open");
+    if (fd == -1) {
+        perror("shm_open");
+        return NULL;
+    }
 
-    IF_EXIT(ftruncate(fd, size) == -1, "ftruncate");
+    if (ftruncate(fd, size) == -1) {
+        perror("ftruncate");
+        close(fd);
+        shm_unlink(name);
+        return NULL;
+    }
 
     void *p = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    IF_EXIT(p == MAP_FAILED, "mmap");
+    if (p == MAP_FAILED) {
+        perror("mmap");
+        close(fd);
+        shm_unlink(name);
+        return NULL;
+    }
 
     close(fd); 
-
     return p;
 }
 
 void* connect_shm(char *name, size_t size, int flags) {
-    IF_EXIT(!(flags == O_RDONLY || flags == O_RDWR), "Modo de apertura no permitido para la memoria compartida");
+    if (!(flags == O_RDONLY || flags == O_RDWR)) {
+        fprintf(stderr, "Modo de apertura no permitido para la memoria compartida\n");
+        return NULL;
+    }
 
-    // open mem
-    int shm_fd = shm_open(name, flags, 0); // if shm already exists, open it
-    IF_EXIT(shm_fd < 0, "Error al abrir la memoria compartida");
+    int shm_fd = shm_open(name, flags, 0);
+    if (shm_fd < 0) {
+        perror("Error al abrir la memoria compartida");
+        return NULL;
+    }
 
-    // mep shm to size
     void* return_ptr = mmap(0, size, (flags == O_RDWR) ? (PROT_READ | PROT_WRITE) : PROT_READ, MAP_SHARED, shm_fd, 0);
-    IF_EXIT(return_ptr == MAP_FAILED, "Error al mapear la memoria compartida");
+    if (return_ptr == MAP_FAILED) {
+        perror("Error al mapear la memoria compartida");
+        close(shm_fd);
+        return NULL;
+    }
 
     close(shm_fd);
-
     return return_ptr;
 }
 
 void destroy_shm(void* ptr, size_t size, const char* name) {
-    IF_EXIT_NON_ZERO(munmap(ptr, size), "Error al desmapear la memoria compartida");
-    IF_EXIT_NON_ZERO(shm_unlink(name), "Error al eliminar la memoria compartida");
+    if (ptr == NULL) {
+        return;
+    }
+
+    if (munmap(ptr, size) != 0) {
+        perror("Error al desmapear la memoria compartida");
+    }
+    if (shm_unlink(name) != 0) {
+        perror("Error al eliminar la memoria compartida");
+    }
 }
 
 void unmap_shm(void* ptr, size_t size) {
-    if (ptr != MAP_FAILED) {
-        IF_EXIT(munmap(ptr, size) == -1, "Error al desmapear la memoria compartida");
+    if (ptr != MAP_FAILED && ptr != NULL) {
+        if (munmap(ptr, size) == -1) {
+            perror("Error al desmapear la memoria compartida");
+        }
     }
 }
+    
     

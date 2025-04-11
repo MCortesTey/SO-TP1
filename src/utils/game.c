@@ -17,7 +17,10 @@ int rand_int(int min, int max) {
 
 game_sync * create_game_sync(){
     game_sync * game_sync_ptr = create_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), S_IRUSR | S_IWUSR | S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP); // 0666
-    IF_EXIT_NULL(game_sync_ptr,"Could not create game_sync")
+    if (game_sync_ptr == NULL) {
+        fprintf(stderr, "Could not create game_sync\n");
+        return NULL;
+    }
 
     // set intial values for sems
     init_shared_sem(&game_sync_ptr->print_needed,1);
@@ -32,7 +35,10 @@ game_sync * create_game_sync(){
 
 game_t * create_game(unsigned short width, unsigned short height, unsigned int n_players, char * players[], unsigned int seed){
     game_t * game_t_ptr = create_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP); // 0644
-    IF_EXIT_NULL(game_t_ptr,"Could not create game_state")
+    if (game_t_ptr == NULL) {
+        fprintf(stderr, "Could not create game_state\n");
+        return NULL;
+    }
 
     game_t_ptr->board_width = width;
     game_t_ptr->board_height = height;

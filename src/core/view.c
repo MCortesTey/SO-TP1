@@ -154,7 +154,17 @@ int main(int argc, const char *argv[] ){
     int height = atoi(argv[2]); 
 
     game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), O_RDWR);
+    if (sync == NULL) {
+        fprintf(stderr, "Error al conectar con la memoria compartida de sincronización\n");
+        exit(EXIT_FAILURE);
+    }
+
     game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), O_RDONLY);
+    if (game_state == NULL) {
+        fprintf(stderr, "Error al conectar con la memoria compartida del juego\n");
+        unmap_shm(sync, sizeof(game_sync));
+        exit(EXIT_FAILURE);
+    }
 
     while (!game_state->has_finished) {
         wait_shared_sem(&sync->print_needed);

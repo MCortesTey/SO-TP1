@@ -34,7 +34,17 @@ int main(int argc, const char *argv[]) {
     IF_EXIT(height <= 0, "alto inválido")
 
     game_t *game_state = connect_shm(SHM_GAME_PATH, sizeof(game_t) + sizeof(int)*(width*height), O_RDONLY);
+    if (game_state == NULL) {
+        fprintf(stderr, "Error al conectar con la memoria compartida del juego\n");
+        exit(EXIT_FAILURE);
+    }
+
     game_sync *sync = connect_shm(SHM_GAME_SEMS_PATH, sizeof(game_sync), O_RDWR);
+    if (sync == NULL) {
+        fprintf(stderr, "Error al conectar con la memoria compartida de sincronización\n");
+        unmap_shm(game_state, sizeof(game_t) + sizeof(int)*(width*height));
+        exit(EXIT_FAILURE);
+    }
 
     unsigned int player_id = 0; 
     pid_t my_pid = getpid();

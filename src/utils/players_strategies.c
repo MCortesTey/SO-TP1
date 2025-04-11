@@ -203,7 +203,7 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
     (void)board;
     (void)x_pos;
     (void)y_pos;
-    return 0;
+    return NONE;
 }
 
 #endif
