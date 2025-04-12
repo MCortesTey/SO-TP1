@@ -1,7 +1,7 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "shm_ADT.h"
+#include "shared_memory.h"
 #include "constants.h"
 
 // GAME CONSTANTS

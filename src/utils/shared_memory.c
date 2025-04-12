@@ -9,7 +9,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "shm_ADT.h"
+#include "shared_memory.h"
 #include "macros.h"
 
 

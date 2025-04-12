@@ -13,7 +13,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "constants.h"
-#include "shm_ADT.h"
+#include "shared_memory.h"
 #include "sems.h"
 
 

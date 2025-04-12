@@ -23,7 +23,7 @@
 #include <math.h>
 #include "constants.h"
 #include "macros.h"
-#include "shm_ADT.h"
+#include "shared_memory.h"
 #include "child_manager.h"
 #include "game.h"
 #include "sems.h"

@@ -13,7 +13,7 @@
 #include <signal.h>
 #include "constants.h"
 #include "macros.h"
-#include "shm_ADT.h"
+#include "shared_memory.h"
 #include "sems.h"
 #include "players_strategies.h"
 

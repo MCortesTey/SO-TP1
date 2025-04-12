@@ -1,8 +1,8 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
-#ifndef SHM_ADT_H
-#define SHM_ADT_H
+#ifndef SHARED_MEMORY_H
+#define SHARED_MEMORY_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -47,4 +47,4 @@ void* connect_shm(char* name, size_t size, int flags);
 void destroy_shm(void* ptr, size_t size, const char* name);
 void unmap_shm(void* ptr, size_t size);
 
-#endif // SHM_ADT_H 
+#endif 
