@@ -67,7 +67,7 @@ int main(int argc, const char *argv[]) {
 
     unsigned char move = NONE;
 
-    while (!player_exit) {
+    while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
         #ifdef JASON
         static int count = 0;
         if (count < (int) game_state->player_number && strcmp(game_state->players[count].name,argv[0])) {
@@ -94,10 +94,6 @@ int main(int argc, const char *argv[]) {
         
         post_shared_sem(&sync->reader_count_mutex);
         //sem_post(&sync->reader_count_mutex);
-
-        if(game_state->has_finished || game_state->players[player_id].is_blocked){
-            break;
-        }
 
         memcpy(my_board, game_state->board_p, sizeof(int) * width * height); 
         my_x = game_state->players[player_id].x_coord;
