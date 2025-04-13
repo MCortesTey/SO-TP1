@@ -61,7 +61,12 @@ int main(int argc, const char *argv[]) {
     bool player_exit = false;
 
     player_exit = player_id == game_state->player_number;
-    fprintf(stderr, "El player %s no se pudo identificar", argv[0]);
+    if(player_exit) {
+        fprintf(stderr, "El player %s no se pudo identificar", argv[0]);
+        unmap_shm(game_state, sizeof(game_t) + sizeof(int)*(width*height));
+        unmap_shm(sync, sizeof(game_sync));
+        exit(EXIT_FAILURE);
+    }
 
     int my_board[height * width];
 

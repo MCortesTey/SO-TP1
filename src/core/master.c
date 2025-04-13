@@ -187,7 +187,6 @@ int main(int argc, char const *argv[]){
                 //pid_t result = waitpid(game->players[i].pid, &status, WNOHANG);
                 status = wait_for_child(game->players[i].pid);
                 // IF_EXIT(result == -1, "waitpid player")
-                
                 //if (result > 0) {  
                 printf("Player %s (%d) exited (%d) with a score of %d / %d / %d\n", players[i], i, status, game->players[i].score, game->players[i].valid_mov_request, game->players[i].invalid_mov_requests);
                 free(players[i]);

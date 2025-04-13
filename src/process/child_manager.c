@@ -13,43 +13,31 @@ pid_t new_child(char *executable_path, char *args[], int write_fd, int read_fd, 
     pid_t pid = fork();
     if(pid == -1){
         perror("fork");
-        return EXIT_FAILURE;
+        return -1;
     }
     if(pid == 0){ 
-        if(write_fd != -1 && (dup2(write_fd, STDOUT_FILENO) == -1)){ 
-            perror("dup2");
-            return EXIT_FAILURE;
-        }
-        if(read_fd != -1 && (dup2(read_fd, STDIN_FILENO) == -1)) { 
-            perror("dup2");
-            return EXIT_FAILURE;
-        } 
+        IF_EXIT(write_fd != -1 && (dup2(write_fd, STDOUT_FILENO) == -1), "dup2");
+        IF_EXIT(read_fd != -1 && (dup2(read_fd, STDIN_FILENO) == -1), "dup2");
+        
+        IF_EXIT(write_fd != -1 && close(write_fd) != 0,"close")
+        IF_EXIT(read_fd != -1 && close(read_fd) != 0,"close")
+        
+        IF_EXIT(access(executable_path, X_OK) == -1, "access");
+        IF_EXIT(args == NULL || args[0] == NULL, "args");
 
-        if(write_fd != -1 && close(write_fd) != 0){ 
-            perror("close");
-            return EXIT_FAILURE;
-        }
-        if(read_fd != -1 && close(read_fd) != 0){ 
-            perror("close");
-            return EXIT_FAILURE;
-        }
-
-        if(access(executable_path, X_OK) == -1){
-            perror("access");
-            return EXIT_FAILURE;
-        }
-
-        if(args == NULL || args[0] == NULL){
-            perror("execv");
-            return EXIT_FAILURE;
-        }
-
-        for(int i = 0; i < fork_num && forks != NULL; i++){
-            if(forks[i][READ_END] != read_fd && forks[i][READ_END] != write_fd) close(forks[i][READ_END]); // close unused read ends
-            if(forks[i][WRITE_END] != read_fd && forks[i][WRITE_END] != write_fd) close(forks[i][WRITE_END]); // close unused write ends
+        if (forks != NULL) {
+            for (int i = 0; i < fork_num; i++) {
+                if (forks[i][READ_END] != read_fd && forks[i][READ_END] != write_fd) {
+                    close(forks[i][READ_END]); // close unused read ends
+                }
+                if (forks[i][WRITE_END] != read_fd && forks[i][WRITE_END] != write_fd) {
+                    close(forks[i][WRITE_END]); // close unused write ends
+                }
+            }
         }
         execv(executable_path, args);
-        IF_EXIT(true,"execv child") 
+        perror("execv child");
+        exit(EXIT_FAILURE);
     } else if(pid > 0){ 
         // close unused pipe
         if(write_fd != -1) close(write_fd);
@@ -61,6 +49,16 @@ pid_t new_child(char *executable_path, char *args[], int write_fd, int read_fd, 
 int wait_for_child(pid_t pid){
     int status;
     pid_t result;
-    IF_EXIT((result = waitpid(pid, &status, WNOHANG)) == -1, "waitpid")
+    if((result = waitpid(pid, &status, 0)) == -1){
+        perror("waitpid");
+        return -1;
+    }
+
+    // process the status with macros
+    // src: https://users.pja.edu.pl/~jms/qnx/help/watcom/clibref/qnx/waitpid.html#:~:text=Returns%3A,errno%20is%20set%20to%20EINTR.
+    if (WIFEXITED(status)) { // if the process exited...
+        return WEXITSTATUS(status); 
+    } 
+
     return status;
 }
