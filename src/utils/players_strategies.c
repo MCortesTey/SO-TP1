@@ -4,6 +4,7 @@
 #include <time.h>
 #include "constants.h"
 #include "players_strategies.h"
+#include "valid_move.h"
 
 #ifdef JASON
 #include <sys/types.h>
@@ -16,8 +17,8 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
     for(int i = UP; i <= UP_LEFT; i++){
         int x = x_pos + dx[i];
         int y = y_pos + dy[i];
-        if (x >= 0 && x < width && y >= 0 && y < height && board[y * width + x] > 0) {
-            return i;  // return first valid mov
+        if (is_valid_move(x,y,width,height,board)) {
+            return i; 
         }
     }
     return NONE;
@@ -32,14 +33,12 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
     for (int i = UP; i <= UP_LEFT; i++) {
         int x = x_pos + dx[i];
         int y = y_pos + dy[i];
-        if (x >= 0 && x < width && y >= 0 && y < height) {
-            if (board[y * width + x] > max_score) {
-                max_score = board[y * width + x];
-                best_move = i;
-            }
+        if (is_valid_move(x, y, width, height, board) && board[y * width + x] > max_score) {
+            max_score = board[y * width + x];
+            best_move = i;
         }
     }
-    return best_move; // return direction with best score
+    return best_move; 
 }
 #endif 
 
@@ -50,13 +49,13 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
 
     for (int i = UP; i <= UP_LEFT; i++) {
         int x = x_pos + dx[i], y = y_pos + dy[i];
-        if (x >= 0 && x < width && y >= 0 && y < height && board[y * width + x] > 0) {
+        if (is_valid_move(x, y, width, height, board)) {
             valid_moves[num_valid_moves++] = i;
         }
     }
 
     if (num_valid_moves > 0) {
-        return valid_moves[rand() % num_valid_moves]; // return random move from possibles
+        return valid_moves[rand() % num_valid_moves];
     }
     return NONE;
 }
@@ -67,20 +66,18 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
     static int i = UP;
     int original_i = i;
 
-    
     do {
         i = i % 8;  
         int x = x_pos + dx[i];
         int y = y_pos + dy[i];
         
-        if (x >= 0 && x < width && y >= 0 && y < height && board[y * width + x] > 0) {
+        if (is_valid_move(x, y, width, height, board)) {
             int move = i;
             i = (i + 1) % 8;  
             return move;
         }
-        
         i++;
-    } while (i != original_i); // check for all directions
+    } while (i != original_i); 
     
     return NONE;
 }
@@ -88,12 +85,12 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
 
 #ifdef KILLER
 unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos){
-    // search for nearest player
+
     int nearest_player = -1;
-    int min_distance = width * height; // max possible distance
+    int min_distance = width * height;
 
     for (int j = 0; j < width * height; j++) {
-        if (board[j] < 0) { // player found
+        if (board[j] < 0) { 
             int player_x = j % width;
             int player_y = j / width;
             int distance = abs(player_x - x_pos) + abs(player_y - y_pos);
@@ -112,13 +109,12 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
             int player_y = nearest_player / width;
             int difx = player_x - x_pos;
             int dify = player_y - y_pos;
-            // move towards the nearest player
+
             if (abs(difx) > abs(dify)) {
                 mov_dir = (difx > 0) ? RIGHT : LEFT;
             } else if (abs(difx) < abs(dify)) {
                 mov_dir = (dify > 0) ? DOWN : UP;
             } else {
-                // prioritize diagonal moves if distances are equal
                 if (difx > 0 && dify > 0) {
                     mov_dir = DOWN_RIGHT;
                 } else if (difx > 0 && dify < 0) {
@@ -130,7 +126,6 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
                 }
             }
         } else {
-            // search for adjacent player
             int player_to_kill = -1;
             for(mov_dir = UP; mov_dir <= UP_LEFT && player_to_kill == -1; mov_dir++){
                 int x = x_pos + dx[mov_dir];
@@ -141,12 +136,11 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
             }
         }
     } else {
-        // no players found --> first valid move
         for(int i = UP; i <= UP_LEFT; i++){
             int x = x_pos + dx[i];
             int y = y_pos + dy[i];
-            if (x >= 0 && x < width && y >= 0 && y < height && board[y * width + x] > 0) {
-                return i;  // return first valid mov
+            if (is_valid_move(x,y,width,height,board)) {
+                return i; 
             }
         }
         return NONE;
@@ -183,11 +177,12 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
         default:
         return NONE;
     }
+
     while (j < 8) {
         int nx = x_pos + dx[movements[j]];
         int ny = y_pos + dy[movements[j]];
-        if (nx >= 0 && nx < width && ny >= 0 && ny < height && board[ny * width + nx] > 0) {
-            break; // mov válido
+        if (is_valid_move(nx, ny, width, height, board)) {
+            break; 
         }
         j++;
     }
@@ -196,14 +191,12 @@ unsigned char generate_move(int width, int height, const int board[], int x_pos,
 #endif
 
 #ifdef ERROR
-
 unsigned char generate_move(int width, int height, const int board[], int x_pos, int y_pos){
-    (void)width;    // Parámetros marcados como no usados para que no rompa el -Werror
+    (void)width;    
     (void)height;
     (void)board;
     (void)x_pos;
     (void)y_pos;
     return NONE;
 }
-
 #endif

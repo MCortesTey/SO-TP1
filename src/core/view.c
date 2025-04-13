@@ -121,9 +121,11 @@ void print_board(game_t *game_state) {
     }
 
     printf("└");
+
     for(int x = 0; x < game_state->board_width * 3; x++) {
         printf("─");
     }
+    
     printf("┘\n");
 
     printf("\nJugadores:\n");
@@ -168,10 +170,8 @@ int main(int argc, const char *argv[] ){
 
     while (!game_state->has_finished) {
         wait_shared_sem(&sync->print_needed);
-        //sem_wait(&sync->print_needed);
         print_board(game_state);
         post_shared_sem(&sync->print_done);
-        //sem_post(&sync->print_done);
     }
 
     unmap_shm(sync, sizeof(game_sync));

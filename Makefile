@@ -15,7 +15,7 @@ PROCESS_DIR = $(SRC_DIR)/process
 UTILS_DIR = $(SRC_DIR)/utils
 
 # Object files with updated paths
-COMMON_OBJS = $(UTILS_DIR)/shared_memory.o $(UTILS_DIR)/constants.o $(UTILS_DIR)/sems.o
+COMMON_OBJS = $(UTILS_DIR)/shared_memory.o $(UTILS_DIR)/constants.o $(UTILS_DIR)/sems.o 
 PLAYER_OBJS = $(CORE_DIR)/player.o $(PROCESS_DIR)/player_best_score.o $(PROCESS_DIR)/player_random.o \
               $(PROCESS_DIR)/player_clock.o $(PROCESS_DIR)/player_killer.o $(PROCESS_DIR)/player_first_possible.o
 MASTER_OBJS = $(CORE_DIR)/master.o $(PROCESS_DIR)/child_manager.o
@@ -38,10 +38,7 @@ $(PROCESS_DIR)/player_%.o: $(CORE_DIR)/player.c include/constants.h include/shar
 view: $(VIEW_OBJS) $(COMMON_OBJS)
 	$(CC) -o view $(VIEW_OBJS) $(COMMON_OBJS) $(LDFLAGS)
 
-$(UTILS_DIR)/%.o: $(UTILS_DIR)/%.c include/constants.h include/macros.h
-	$(CC) $(GCCFLAGS) -c $< -o $@
-
-$(UTILS_DIR)/%.o: $(UTILS_DIR)/%.c include/constants.h include/macros.h
+$(UTILS_DIR)/%.o: $(UTILS_DIR)/%.c include/constants.h include/macros.h include/*
 	$(CC) $(GCCFLAGS) -c $< -o $@
 
 $(PROCESS_DIR)/child_manager.o: $(PROCESS_DIR)/child_manager.c include/constants.h include/shared_memory.h
@@ -50,7 +47,7 @@ $(PROCESS_DIR)/child_manager.o: $(PROCESS_DIR)/child_manager.c include/constants
 $(CORE_DIR)/%.o: $(CORE_DIR)/%.c
 	$(CC) $(GCCFLAGS) -c $< -o $@
 
-$(UTILS_DIR)/players_strategies_%.o: $(UTILS_DIR)/players_strategies.c include/constants.h include/players_strategies.h
+$(UTILS_DIR)/players_strategies_%.o: $(UTILS_DIR)/players_strategies.c include/constants.h include/players_strategies.h 
 	$(CC) $(GCCFLAGS) -D$(shell echo $* | tr '[:lower:]' '[:upper:]') -c $< -o $@
 
 clean:

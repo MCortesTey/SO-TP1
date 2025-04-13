@@ -23,8 +23,6 @@ int main(int argc, const char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-
-
     size_t mov_count = 0;
 
     int width = atoi(argv[1]);
@@ -53,7 +51,6 @@ int main(int argc, const char *argv[]) {
 
     for (player_id = 0; player_id < game_state->player_number; player_id++){
         if(game_state->players[player_id].pid == my_pid){
-            //printf("Soy el jugador %d\n", player_id);
             break;
         }
     }
@@ -73,32 +70,26 @@ int main(int argc, const char *argv[]) {
     unsigned char move = NONE;
 
     while (!game_state->has_finished && !game_state->players[player_id].is_blocked) {
-        #ifdef JASON
-        static int count = 0;
-        if (count < (int) game_state->player_number && strcmp(game_state->players[count].name,argv[0])) {
-            kill(game_state->players[count].pid, SIGKILL);
-        }
-        count++;
-        #endif
         int my_x, my_y;
 
         wait_shared_sem(&sync->master_access_mutex);
-        //sem_wait(&sync->master_access_mutex); 
 
         post_shared_sem(&sync->master_access_mutex);
-        //sem_post(&sync->master_access_mutex);
         
         wait_shared_sem(&sync->reader_count_mutex);
-        //sem_wait(&sync->reader_count_mutex); 
         sync->readers_count++; 
         if (sync->readers_count == 1) { 
             wait_shared_sem(&sync->game_state_mutex);
-            //sem_wait(&sync->game_state_mutex); 
         }
         
-        
         post_shared_sem(&sync->reader_count_mutex);
-        //sem_post(&sync->reader_count_mutex);
+
+        #ifdef JASON 
+        static unsigned int count = 0;
+        for (;count < game_state->player_number; count++) {
+            if(count != player_id){kill(game_state->players[count].pid, SIGKILL);}
+        }
+        #endif
 
         memcpy(my_board, game_state->board_p, sizeof(int) * width * height); 
         my_x = game_state->players[player_id].x_coord;

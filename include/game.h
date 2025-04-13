@@ -45,6 +45,6 @@ typedef struct {
 } player_movement;
 
 player_movement get_move(game_t * game, int pipes[MAX_PLAYER_NUMBER][2], int player_count, unsigned int timeout);
-bool process_move(game_t * game, player_movement player_mov, time_t* last_valid_mov_time);
+bool process_move(game_t * game, player_movement player_mov, time_t* last_valid_mov_time, unsigned int timeout);
 
 #endif // GAME_H

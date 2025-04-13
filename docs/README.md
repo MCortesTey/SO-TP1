@@ -13,8 +13,6 @@ Sigue los pasos a continuación para compilar y ejecutar el proyecto correctamen
 make all
 ```
 3. Para ejectutar el proyecto utiliza:
-
-#### Ejecución con nuestro master
 ```bash
 ./ChompChamps [parámetros]
 ```
@@ -33,12 +31,11 @@ Los parámetros entre corchetes son opcionales y tienen un valor por defecto:
 
 #### Jugadores Disponibles
 
-- `player_first_possible`: Realiza el primer movimiento posible
-- `player_best_score`: Elige el movimiento que maximiza su puntaje
-- `player_random`: Realiza movimientos aleatorios
-- `player_clock`: Se mueve en sentido de las agujas del reloj
-- `player_killer`: Estrategia agresiva
-- `player_jason`: Estrategia especial
+- `player_first_possible`
+- `player_best_score`
+- `player_random`
+- `player_clock`
+- `player_killer`
 - `player_jason`
 
 ## Compilación
