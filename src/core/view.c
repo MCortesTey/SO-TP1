@@ -177,6 +177,5 @@ int main(int argc, const char *argv[] ){
     unmap_shm(sync, sizeof(game_sync));
     unmap_shm(game_state, sizeof(game_t));
 
-    fprintf(stderr, "Soy la vista. El juego ha terminado, retorno %d\n",EXIT_SUCCESS);
     return EXIT_SUCCESS;
 }
