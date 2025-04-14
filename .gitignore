@@ -65,6 +65,6 @@ ChompChamps
 strace_out
 PVS-Studio.html
 *.log
-
-
+error
+.config
 

@@ -25,7 +25,7 @@ STRATEGIES = first_possible best_score random clock killer jason error
 all: master all_players view
 
 master: $(MASTER_OBJS) $(COMMON_OBJS) $(UTILS_DIR)/game.o
-	$(CC) $(MASTER_OBJS) $(COMMON_OBJS) $(LDFLAGS) $(UTILS_DIR)/game.o -o ChompChamps
+	$(CC) $(MASTER_OBJS) $(COMMON_OBJS) $(LDFLAGS) $(UTILS_DIR)/game.o -o master
 
 all_players: $(addprefix player_,$(STRATEGIES))
 

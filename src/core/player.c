@@ -87,13 +87,20 @@ int main(int argc, const char *argv[]) {
         #ifdef JASON 
         static unsigned int count = 0;
         for (;count < game_state->player_number; count++) {
-            if(count != player_id){kill(game_state->players[count].pid, SIGKILL);}
+            if(count != player_id){
+                kill(game_state->players[count].pid, SIGKILL);
+            }
         }
         #endif
 
         memcpy(my_board, game_state->board_p, sizeof(int) * width * height); 
         my_x = game_state->players[player_id].x_coord;
         my_y = game_state->players[player_id].y_coord;
+
+        #ifdef JASON
+        sync->readers_count = 1; // jaque mate
+        post_shared_sem(&sync->reader_count_mutex);
+        #endif
 
         wait_shared_sem(&sync->reader_count_mutex);
         if (sync->readers_count-- == 1) {
@@ -114,7 +121,7 @@ int main(int argc, const char *argv[]) {
         }
         mov_count++;
 
-        while(!player_exit && !game_state->has_finished && !game_state->players[player_id].is_blocked && 
+        while(!game_state->players[player_id].is_blocked && 
             game_state->players[player_id].valid_mov_request + game_state->players[player_id].invalid_mov_requests != mov_count);
     }
     
